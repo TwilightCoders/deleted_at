@@ -1,6 +1,8 @@
 # DeletedAt
 
-Provides functionality to ActiveRecord::Base to delete records while keeping them in the database.
+Deleting data is never good. A common solution is to use `default_scope`, but conventional wisdom (and for good reason) deams this a bad practice. So how do we achieve the same effect with minimal intervention. What we're looking for is the cliche "clean" solution.
+
+DeletedAt leverages the power of SQL views to achieve the same effect. It also takes advantage of Ruby's flexibility.
 
 ## Installation
 
@@ -20,12 +22,26 @@ Or install it yourself as:
 
 ## Usage
 
-Coming soon.
+Using `DeletedAt` is very simple. It follows a familiar pattern seen throughout the rest of the Ruby/Rails community.
+
+```ruby
+class User < ActiveRecord::Base
+  # Feel free to include/extend other modules before or after, as you see fit...
+
+  with_deleted_at
+
+  # the rest of your model code...
+end
+```
+
+## Development
+
+After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
 
 ## Contributing
 
-1. Fork it ( https://github.com/TwilightCoders/deleted_at/fork )
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create a new Pull Request
+Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/deleted_at. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
+
+## License
+
+The gem is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
