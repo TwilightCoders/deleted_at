@@ -34,6 +34,26 @@ class User < ActiveRecord::Base
 end
 ```
 
+You'll (probably) need to migrate your database for `deleted_at` to work properly.
+
+```ruby
+class AddDeletedAtColumnToUsers < ActiveRecord::Migration
+
+  def up
+    add_column :users, :deleted_at, 'timestamp with time zone'
+
+    DeletedAt.install(User)
+  end
+
+  def down
+    DeletedAt.uninstall(User)
+
+    remove_column :users, :deleted_at, 'timestamp with time zone'
+  end
+
+end
+```
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
