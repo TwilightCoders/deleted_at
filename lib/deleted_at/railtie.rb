@@ -9,7 +9,7 @@ module DeletedAt
 
     initializer 'deleted_at.install' do
       ActiveSupport.on_load(:active_record) do
-        ::ActiveRecord::Relation.send :prepend, DeletedAt::ActiveRecord::Relation
+        ::ActiveRecord::Relation.send :include, DeletedAt::ActiveRecord::Relation
         ::ActiveRecord::Base.send :include, DeletedAt::ActiveRecord::Base
       end
     end
