@@ -5,6 +5,7 @@ module DeletedAt
     module Relation
 
       def deleted_at_attributes
+        # We _do_ have klass at this point
         { klass.deleted_at_column => Time.now.utc }
       end
 
