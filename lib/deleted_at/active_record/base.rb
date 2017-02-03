@@ -7,7 +7,7 @@ module DeletedAt
       extend ActiveSupport::Concern
 
       included do
-        class_attribute :deleted_at_column,
+        class_attribute :deleted_at_column, :original_table_name,
           :deleted_by_column, :deleted_by_class, :deleted_by_primary_key
 
         class << self
@@ -25,12 +25,6 @@ module DeletedAt
 
           parse_options(options)
 
-          # Just gotta ask for it once, so the class knows it before inheritence
-          # NOTE: This needs to happen regardless of whether the views have been installed
-          # yet or not. This is because to install the views, this needs to have been done!
-          primary_key = self.primary_key
-          table_name = self.table_name
-
           unless ::DeletedAt::Views.all_table_exists?(self) && ::DeletedAt::Views.deleted_view_exists?(self)
             return warn("You're trying to use `with_deleted_at` on #{name} but you have not installed the views, yet.")
           end
@@ -46,6 +40,17 @@ module DeletedAt
               end
             BBB
           end
+
+
+          # We are confident at this point that the tables and views have been setup.
+          # We need to do a bit of wizardy by setting the table name to the actual table
+          # (at this point: model/all), such that the model has all the information
+          # regarding its structure and intended behavior. Calling primary_key loads the
+          # table data into the class.
+          self.original_table_name = self.table_name
+          self.table_name = ::DeletedAt::Views.all_table(self)
+          primary_key = self.primary_key
+          self.table_name = self.original_table_name
 
           setup_class_views
           with_deleted_by
