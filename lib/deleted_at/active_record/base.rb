@@ -7,8 +7,8 @@ module DeletedAt
       extend ActiveSupport::Concern
 
       included do
-        class_attribute :original_table_name,
-          :deleted_at_column, :deleted_by_column, :deleted_by_class, :deleted_by_primary_key
+        class_attribute :deleted_at_column,
+          :deleted_by_column, :deleted_by_class, :deleted_by_primary_key
 
         class << self
           [:archive_with_deleted_at?, :archive_with_deleted_by?].each do |sym|
@@ -29,9 +29,9 @@ module DeletedAt
           # NOTE: This needs to happen regardless of whether the views have been installed
           # yet or not. This is because to install the views, this needs to have been done!
           primary_key = self.primary_key
-          self.original_table_name = self.table_name
+          table_name = self.table_name
 
-          unless ::DeletedAt::Views.present_view_exists?(self) && ::DeletedAt::Views.deleted_view_exists?(self)
+          unless ::DeletedAt::Views.all_table_exists?(self) && ::DeletedAt::Views.deleted_view_exists?(self)
             return warn("You're trying to use `with_deleted_at` on #{name} but you have not installed the views, yet.")
           end
 
@@ -49,8 +49,6 @@ module DeletedAt
 
           setup_class_views
           with_deleted_by
-
-          self.table_name = ::DeletedAt::Views.present_view(self)
 
         end
 
@@ -82,7 +80,7 @@ module DeletedAt
 
           self.const_set(:All, Class.new(self) do |klass|
             class_eval <<-AAA
-              self.table_name = '#{self.original_table_name}'
+              self.table_name = '#{::DeletedAt::Views.all_table(klass)}'
             AAA
           end)
 
