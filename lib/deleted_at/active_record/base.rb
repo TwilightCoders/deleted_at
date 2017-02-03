@@ -26,7 +26,7 @@ module DeletedAt
 
         def create_with_deleted_at(attributes = nil, &block)
           if archive_with_deleted_at?
-            const_get(:All).create_without_deleted_at(attributes, &block)
+            const_get(:All).create_without_deleted_at(attributes, &block).becomes(self)
           else
             create_without_deleted_at(attributes, &block)
           end
@@ -34,7 +34,7 @@ module DeletedAt
 
         def create_with_deleted_at!(attributes = nil, &block)
           if archive_with_deleted_at?
-            const_get(:All).create_without_deleted_at!(attributes, &block)
+            const_get(:All).create_without_deleted_at!(attributes, &block).becomes(self)
           else
             create_without_deleted_at!(attributes, &block)
           end
