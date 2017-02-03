@@ -17,6 +17,7 @@ module DeletedAt
             end
           end
           alias_method_chain :create, :deleted_at
+          alias_method_chain :create!, :deleted_at
         end
 
       end
@@ -27,7 +28,15 @@ module DeletedAt
           if archive_with_deleted_at?
             const_get(:All).create_without_deleted_at(attributes, &block)
           else
-            create_without_deleted_at
+            create_without_deleted_at(attributes, &block)
+          end
+        end
+
+        def create_with_deleted_at!(attributes = nil, &block)
+          if archive_with_deleted_at?
+            const_get(:All).create_without_deleted_at!(attributes, &block)
+          else
+            create_without_deleted_at!(attributes, &block)
           end
         end
 
