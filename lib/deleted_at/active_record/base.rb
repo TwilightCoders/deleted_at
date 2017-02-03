@@ -76,6 +76,15 @@ module DeletedAt
           end
         end
 
+        def refactor_validators
+          validators.each do |validator|
+            case validator
+            when ActiveRecord::Validations::UniquenessValidator
+
+            end
+          end
+        end
+
         def setup_class_views
 
           self.const_set(:All, Class.new(self) do |klass|
