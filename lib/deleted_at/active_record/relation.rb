@@ -88,3 +88,5 @@ module DeletedAt
     end
   end
 end
+
+::ActiveRecord::Relation.send :include, DeletedAt::ActiveRecord::Relation

@@ -172,3 +172,5 @@ module DeletedAt
     end
   end
 end
+
+::ActiveRecord::Base.send :include, DeletedAt::ActiveRecord::Base

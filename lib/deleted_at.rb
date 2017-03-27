@@ -1,5 +1,9 @@
 require "deleted_at/version"
-require 'deleted_at/railtie' if defined? ::Rails::Railtie
+
+require 'action_controller'
+require 'action_controller/railtie'
+require 'deleted_at/active_record/base'
+require 'deleted_at/active_record/relation'
 
 module DeletedAt
 
