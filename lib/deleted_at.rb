@@ -1,8 +1,13 @@
 require "deleted_at/version"
-require 'deleted_at/railtie' if defined? ::Rails::Railtie
+require 'deleted_at/railtie'
+require 'deleted_at/views'
 
 module DeletedAt
 
+  def self.load
+    ::ActiveRecord::Relation.send :include, DeletedAt::ActiveRecord::Relation
+    ::ActiveRecord::Base.send :include, DeletedAt::ActiveRecord::Base
+  end
 
   def self.install(model)
     DeletedAt::Views.install_present_view(model)
