@@ -42,6 +42,8 @@ module DeletedAt
 
         def with_deleted_at(options={})
 
+          return warn("No DB connection found; skipping deleted_at initialization") unless ::ActiveRecord::Base.connected?
+
           parse_options(options)
 
           unless ::DeletedAt::Views.all_table_exists?(self) && ::DeletedAt::Views.deleted_view_exists?(self)
