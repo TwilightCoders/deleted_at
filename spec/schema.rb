@@ -4,4 +4,10 @@ ActiveRecord::Schema.define do
     t.datetime :deleted_at
     t.timestamps null: false
   end
+
+  create_table :documents, force: true do |t|
+    t.string :title
+    t.datetime :deleted_at
+    t.timestamps null: false
+  end
 end
