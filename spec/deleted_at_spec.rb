@@ -25,10 +25,17 @@ describe DeletedAt do
       expect(ActiveRecord::Base.connection.table_exists?('users/deleted')).to be_truthy
     end
 
-    it 'creates the ALL class' do
+    it 'creates the DeletedAt class extensions' do
       DeletedAt.install(User)
       expect(User.const_defined?(:All)).to be_truthy
       expect(User.const_defined?(:Deleted)).to be_truthy
+    end
+
+    it 'sets the correct table name for modified class' do
+      DeletedAt.install(User)
+      expect(User.table_name).to eql('users')
+      expect(User::All.table_name).to eql('users/all')
+      expect(User::Deleted.table_name).to eql('users/deleted')
     end
   end
 
@@ -72,10 +79,17 @@ describe DeletedAt do
       expect(ActiveRecord::Base.connection.table_exists?('documents/deleted')).to be_truthy
     end
 
-    it 'creates the ALL class' do
+    it 'creates the DeletedAt class extensions' do
       DeletedAt.install(Book)
       expect(Book.const_defined?(:All)).to be_truthy
       expect(Book.const_defined?(:Deleted)).to be_truthy
+    end
+
+    it 'sets the correct table name for modified class' do
+      DeletedAt.install(Book)
+      expect(Book.table_name).to eql('documents')
+      expect(Book::All.table_name).to eql('documents/all')
+      expect(Book::Deleted.table_name).to eql('documents/deleted')
     end
   end
 
@@ -92,6 +106,60 @@ describe DeletedAt do
       DeletedAt.uninstall(Book)
       expect(Book.const_defined?(:All)).to be_falsy
       expect(Book.const_defined?(:Deleted)).to be_falsy
+    end
+  end
+
+describe '#install for namespaced model' do
+    after(:each) do
+      DeletedAt.uninstall(Animals::Dog)
+    end
+
+    it 'should not raise error' do
+      expect{ DeletedAt.install(Animals::Dog) }.to_not raise_error()
+    end
+
+    it 'should rename the models table' do
+      DeletedAt.install(Animals::Dog)
+      expect(ActiveRecord::Base.connection.table_exists?('dogs/all')).to be_truthy
+    end
+
+    it 'should have a view for all non-deleted books' do
+      DeletedAt.install(Animals::Dog)
+      expect(ActiveRecord::Base.connection.table_exists?('dogs')).to be_truthy
+    end
+
+    it 'should have a view for all deleted books' do
+      DeletedAt.install(Animals::Dog)
+      expect(ActiveRecord::Base.connection.table_exists?('dogs/deleted')).to be_truthy
+    end
+
+    it 'creates the DeletedAt class extensions' do
+      DeletedAt.install(Animals::Dog)
+      expect(Animals::Dog.const_defined?(:All)).to be_truthy
+      expect(Animals::Dog.const_defined?(:Deleted)).to be_truthy
+    end
+
+    it 'sets the correct table name for modified class' do
+      DeletedAt.install(Animals::Dog)
+      expect(Animals::Dog.table_name).to eql('dogs')
+      expect(Animals::Dog::All.table_name).to eql('dogs/all')
+      expect(Animals::Dog::Deleted.table_name).to eql('dogs/deleted')
+    end
+  end
+
+  describe '#uninstall for namespaced model' do
+    before(:each) do
+      DeletedAt.install(Animals::Dog)
+    end
+
+    it 'should not raise error' do
+      expect{ DeletedAt.uninstall(Animals::Dog) }.to_not raise_error()
+    end
+
+    it 'should remove model extensions' do
+      DeletedAt.uninstall(Animals::Dog)
+      expect(Animals::Dog.const_defined?(:All)).to be_falsy
+      expect(Animals::Dog.const_defined?(:Deleted)).to be_falsy
     end
   end
 

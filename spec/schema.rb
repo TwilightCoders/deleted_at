@@ -10,4 +10,10 @@ ActiveRecord::Schema.define do
     t.datetime :deleted_at
     t.timestamps null: false
   end
+
+  create_table :dogs, force: true do |t|
+    t.string :name
+    t.datetime :deleted_at
+    t.timestamps null: false
+  end
 end
