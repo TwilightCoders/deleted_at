@@ -1,5 +1,6 @@
 require 'deleted_at/views'
 require 'deleted_at/active_record/relation'
+require 'active_support'
 
 module DeletedAt
   module ActiveRecord
@@ -57,7 +58,11 @@ module DeletedAt
 
           setup_class_views
           with_deleted_by
+        end
 
+        def remove_class_views
+          self.send(:remove_const, :All) if self.const_defined?(:All)
+          self.send(:remove_const, :Deleted) if self.const_defined?(:Deleted)
         end
 
         private
@@ -94,7 +99,6 @@ module DeletedAt
         end
 
         def setup_class_views
-
           self.const_set(:All, Class.new(self) do |klass|
             class_eval <<-AAA
               self.table_name = '#{::DeletedAt::Views.all_table(klass)}'
