@@ -9,10 +9,13 @@ rvm:
 cache: bundler
 script:
   - bundle exec rspec
-services:
-    - postgresql
+
+after_success:
+  - bundle exec codeclimate-test-reporter
+
 addons:
   postgresql: "9.1"
+
 env:
   - RSPEC_VERSION="<2.99"
   - RSPEC_VERSION="~>3.0

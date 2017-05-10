@@ -1,4 +1,4 @@
-# DeletedAt
+# DeletedAt [![Build Status](https://travis-ci.org/TwilightCoders/deleted_at.svg?branch=master)](https://travis-ci.org/TwilightCoders/deleted_at) [![Code Climate](https://codeclimate.com/github/TwilightCoders/deleted_at/badges/gpa.svg)](https://codeclimate.com/github/TwilightCoders/deleted_at) [![Test Coverage](https://codeclimate.com/github/TwilightCoders/deleted_at/badges/coverage.svg)](https://codeclimate.com/github/TwilightCoders/deleted_at/coverage)
 
 Deleting data is never good. A common solution is to use `default_scope`, but conventional wisdom (and for good reason) deams this a bad practice. So how do we achieve the same effect with minimal intervention. What we're looking for is the cliche "clean" solution.
 

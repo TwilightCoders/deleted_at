@@ -5,6 +5,9 @@ $LOAD_PATH.unshift File.expand_path("../../lib", __FILE__)
 require 'pry'
 require 'deleted_at'
 require 'active_record'
+require "simplecov"
+
+SimpleCov.start
 
 DeletedAt.load
 
