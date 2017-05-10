@@ -1,6 +1,9 @@
 require "deleted_at/version"
-require 'deleted_at/railtie'
 require 'deleted_at/views'
+require 'deleted_at/active_record/base'
+require 'deleted_at/active_record/relation'
+
+require 'deleted_at/railtie' if defined?(Rails::Railtie)
 
 module DeletedAt
 

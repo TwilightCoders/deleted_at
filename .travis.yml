@@ -1,5 +1,18 @@
-sudo: false
 language: ruby
+sudo: false
 rvm:
+  - 2.0
+  - 2.1
+  - 2.2
   - 2.3.1
-before_install: gem install bundler -v 1.13.6
+  - 2.4.0
+cache: bundler
+script:
+  - bundle exec rspec
+services:
+    - postgresql
+addons:
+  postgresql: "9.1"
+env:
+  - RSPEC_VERSION="<2.99"
+  - RSPEC_VERSION="~>3.0

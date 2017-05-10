@@ -1,6 +1,5 @@
+require 'active_record'
 require 'deleted_at/views'
-require 'deleted_at/active_record/relation'
-require 'active_support'
 
 module DeletedAt
   module ActiveRecord

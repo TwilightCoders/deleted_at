@@ -29,15 +29,14 @@ Gem::Specification.new do |spec|
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
-  spec.required_ruby_version = '>= 2.0'
+
+  rails_versions = ['>= 4.1', '< 5']
+  spec.required_ruby_version = '>= 2.0.0'
 
   spec.add_runtime_dependency 'pg', '~> 0'
-  spec.add_runtime_dependency "activerecord", "~> 4.2"
-  spec.add_runtime_dependency "railties", "~> 4.2"
-  spec.add_runtime_dependency "scenic", "~> 1.3"
-  spec.add_runtime_dependency 'request_store', '~> 1.1', '>= 1.1'
+  spec.add_runtime_dependency "activerecord", rails_versions
 
-  spec.add_development_dependency "bundler", "~> 1.13"
+  spec.add_development_dependency "bundler", "~> 1.3"
   spec.add_development_dependency "rake", "~> 10.0"
   spec.add_development_dependency "rspec", "~> 3.0"
   spec.add_development_dependency "pry", "~> 0.10"

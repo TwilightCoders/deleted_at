@@ -4,6 +4,10 @@ Deleting data is never good. A common solution is to use `default_scope`, but co
 
 DeletedAt leverages the power of SQL views to achieve the same effect. It also takes advantage of Ruby's flexibility.
 
+## Requirements
+
+`DeletedAt` requires PostgreSQL 9.1+ and Ruby 2.0.0+ (as the `pg` gem requires Ruby 2.0.0).
+
 ## Installation
 
 Add this line to your application's Gemfile:

@@ -1,6 +1,4 @@
 require 'rails/railtie'
-require 'deleted_at/active_record/base'
-require 'deleted_at/active_record/relation'
 
 module DeletedAt
   class Railtie < Rails::Railtie

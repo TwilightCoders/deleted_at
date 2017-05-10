@@ -30,7 +30,7 @@ module DeletedAt
           WHERE  table_name = '#{all_table(model)}'
         );
       SQL
-      query.first['exists'] == 't'
+      get_truthy_value_from_psql(query)
     end
 
     def self.deleted_view_exists?(model)
@@ -41,7 +41,7 @@ module DeletedAt
           WHERE  table_name = '#{deleted_view(model)}'
         );
       SQL
-      query.first['exists'] == 't'
+      get_truthy_value_from_psql(query)
     end
 
     def self.present_view(model)
@@ -68,5 +68,15 @@ module DeletedAt
     def self.uninstall_deleted_view(model)
       model.connection.execute("DROP VIEW IF EXISTS \"#{deleted_view(model)}\"")
     end
+
+    private
+
+    def self.get_truthy_value_from_psql(result)
+      # Some versions of PSQL return {"?column?"=>"t"}
+      # instead of {"first"=>"t"}, so we're saying screw it,
+      # just give me the first value of whatever is returned
+      result.try(:first).try(:values).try(:first) == 't'
+    end
+
   end
 end
