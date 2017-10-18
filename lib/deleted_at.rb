@@ -7,6 +7,17 @@ require 'deleted_at/railtie' if defined?(Rails::Railtie)
 
 module DeletedAt
 
+  class << self
+    attr_writer :logger
+
+    def logger
+      @logger ||= Logger.new($stdout).tap do |log|
+        log.progname = self.name
+        log.level = Logger::INFO
+      end
+    end
+  end
+
   def self.load
     ::ActiveRecord::Relation.send :include, DeletedAt::ActiveRecord::Relation
     ::ActiveRecord::Base.send :include, DeletedAt::ActiveRecord::Base

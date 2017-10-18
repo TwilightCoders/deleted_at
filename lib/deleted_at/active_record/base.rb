@@ -24,16 +24,16 @@ module DeletedAt
 
         def with_deleted_at(options={})
 
-          return warn("No DB connection found; skipping deleted_at initialization") unless ::ActiveRecord::Base.connected?
+          return DeletedAt.logger.warn("No DB connection found; skipping deleted_at initialization") unless ::ActiveRecord::Base.connected?
 
           parse_options(options)
 
           unless ::DeletedAt::Views.all_table_exists?(self) && ::DeletedAt::Views.deleted_view_exists?(self)
-            return warn("You're trying to use `with_deleted_at` on #{name} but you have not installed the views, yet.")
+            return DeletedAt.logger.warn("You're trying to use `with_deleted_at` on #{name} but you have not installed the views, yet.")
           end
 
           unless columns.map(&:name).include?(deleted_at_column)
-            return warn("Missing `#{deleted_at_column}` in `#{name}` when trying to employ `deleted_at`")
+            return DeletedAt.logger.warn("Missing `#{deleted_at_column}` in `#{name}` when trying to employ `deleted_at`")
           end
 
           [:archive_with_deleted_at?, :archive_with_deleted_by?].each do |sym|
