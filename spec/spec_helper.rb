@@ -1,13 +1,14 @@
 ENV['RAILS_ENV'] = 'test'
 
-$LOAD_PATH.unshift File.expand_path("../../lib", __FILE__)
+require 'database_cleaner'
+
+require 'simplecov'
+SimpleCov.start do
+  # add_group 'Lib', 'lib'
+  add_filter 'spec'
+end
 
 require 'deleted_at'
-require 'active_record'
-require "simplecov"
-
-SimpleCov.start
-
 DeletedAt.load
 
 db_config = {
