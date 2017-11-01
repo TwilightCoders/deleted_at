@@ -40,6 +40,13 @@ module DeletedAt
     model.remove_class_views
   end
 
+  def self.get_truthy_value_from_psql(result)
+    # Some versions of PSQL return {"?column?"=>"t"}
+    # instead of {"first"=>"t"}, so we're saying screw it,
+    # just give me the first value of whatever is returned
+    result.try(:first).try(:values).try(:first) == 't'
+  end
+
   private
 
 end
