@@ -3,23 +3,27 @@ module DeletedAt
 
     def self.install_present_view(model)
       uninstall_present_view(model)
-      all_table_name = all_table(model)
       present_table_name = present_view(model)
 
-      model.connection.execute("ALTER TABLE \"#{present_table_name}\" RENAME TO \"#{all_table_name}\"")
-      model.connection.execute <<-SQL
-        CREATE OR REPLACE VIEW "#{present_table_name}"
-        AS SELECT * FROM "#{all_table_name}" WHERE #{model.deleted_at_column} IS NULL;
-      SQL
+      while_spoofing_table_name(model, all_table(model)) do
+        model.connection.execute("ALTER TABLE \"#{present_table_name}\" RENAME TO \"#{model.table_name}\"")
+        model.connection.execute <<-SQL
+          CREATE OR REPLACE VIEW "#{present_table_name}"
+          AS #{ model.where(model.deleted_at_column => nil).to_sql }
+        SQL
+      end
     end
 
     def self.install_deleted_view(model)
-      return warn("You must install the all/present tables/views first!") unless all_table_exists?(model)
+      return DeletedAt.logger.warn("You must install the all/present tables/views first!") unless all_table_exists?(model)
       table_name = deleted_view(model)
-      model.connection.execute <<-SQL
-        CREATE OR REPLACE VIEW "#{table_name}"
-        AS SELECT * FROM "#{all_table(model)}" WHERE #{model.deleted_at_column} IS NOT NULL;
-      SQL
+
+      while_spoofing_table_name(model, all_table(model)) do
+        model.connection.execute <<-SQL
+          CREATE OR REPLACE VIEW "#{table_name}"
+          AS #{ model.where.not(model.deleted_at_column => nil).to_sql }
+        SQL
+      end
     end
 
     def self.all_table_exists?(model)
@@ -70,6 +74,13 @@ module DeletedAt
     end
 
     private
+
+    def self.while_spoofing_table_name(model, new_name, &block)
+      old_name = model.table_name
+      model.table_name = new_name
+      yield
+      model.table_name = old_name
+    end
 
   end
 end
