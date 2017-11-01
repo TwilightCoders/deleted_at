@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+puts "Launching console for deleted_at..."
+
 require "bundler/setup"
 require "deleted_at"
 
