@@ -2,6 +2,7 @@ require "deleted_at/version"
 require 'deleted_at/views'
 require 'deleted_at/active_record/base'
 require 'deleted_at/active_record/relation'
+require 'deleted_at/active_record/connection_adapters/abstract/schema_definition'
 
 require 'deleted_at/railtie' if defined?(Rails::Railtie)
 
@@ -21,6 +22,7 @@ module DeletedAt
   def self.load
     ::ActiveRecord::Relation.send :include, DeletedAt::ActiveRecord::Relation
     ::ActiveRecord::Base.send :include, DeletedAt::ActiveRecord::Base
+    ::ActiveRecord::ConnectionAdapters::TableDefinition.send :prepend, DeletedAt::ActiveRecord::ConnectionAdapters::TableDefinition
   end
 
   def self.install(model)
