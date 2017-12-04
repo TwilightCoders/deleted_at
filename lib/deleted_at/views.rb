@@ -32,9 +32,9 @@ module DeletedAt
           SELECT 1
           FROM   information_schema.tables
           WHERE  table_name = '#{all_table(model)}'
-        );
+        ) AS exists;
       SQL
-      DeletedAt.get_truthy_value_from_psql(query)
+      DeletedAt.testify(query.first['exists'])
     end
 
     def self.deleted_view_exists?(model)
@@ -43,9 +43,9 @@ module DeletedAt
           SELECT 1
           FROM   information_schema.tables
           WHERE  table_name = '#{deleted_view(model)}'
-        );
+        ) AS exists;
       SQL
-      DeletedAt.get_truthy_value_from_psql(query)
+      DeletedAt.testify(query.first['exists'])
     end
 
     def self.present_view(model)
