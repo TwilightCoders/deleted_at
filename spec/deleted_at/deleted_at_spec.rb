@@ -1,6 +1,7 @@
 require "spec_helper"
 
 describe DeletedAt do
+
   describe '#install for simple model' do
     after(:each) do
       DeletedAt.uninstall(User)
@@ -17,12 +18,12 @@ describe DeletedAt do
 
     it 'should have a view for all non-deleted users' do
       DeletedAt.install(User)
-      expect(ActiveRecord::Base.connection.table_exists?('users')).to be_truthy
+      expect(ActiveRecord::Base.connection.view_exists?('users')).to be_truthy
     end
 
     it 'should have a view for all deleted users' do
       DeletedAt.install(User)
-      expect(ActiveRecord::Base.connection.table_exists?('users/deleted')).to be_truthy
+      expect(ActiveRecord::Base.connection.view_exists?('users/deleted')).to be_truthy
     end
 
     it 'creates the DeletedAt class extensions' do
@@ -57,55 +58,55 @@ describe DeletedAt do
 
   describe '#install for model with customized table_name' do
     after(:each) do
-      DeletedAt.uninstall(Book)
+      DeletedAt.uninstall(Post)
     end
 
     it 'should not raise error' do
-      expect{ DeletedAt.install(Book) }.to_not raise_error()
+      expect{ DeletedAt.install(Post) }.to_not raise_error()
     end
 
     it 'should rename the models table' do
-      DeletedAt.install(Book)
+      DeletedAt.install(Post)
       expect(ActiveRecord::Base.connection.table_exists?('documents/all')).to be_truthy
     end
 
     it 'should have a view for all non-deleted books' do
-      DeletedAt.install(Book)
-      expect(ActiveRecord::Base.connection.table_exists?('documents')).to be_truthy
+      DeletedAt.install(Post)
+      expect(ActiveRecord::Base.connection.view_exists?('documents')).to be_truthy
     end
 
     it 'should have a view for all deleted books' do
-      DeletedAt.install(Book)
-      expect(ActiveRecord::Base.connection.table_exists?('documents/deleted')).to be_truthy
+      DeletedAt.install(Post)
+      expect(ActiveRecord::Base.connection.view_exists?('documents/deleted')).to be_truthy
     end
 
     it 'creates the DeletedAt class extensions' do
-      DeletedAt.install(Book)
-      expect(Book.const_defined?(:All)).to be_truthy
-      expect(Book.const_defined?(:Deleted)).to be_truthy
+      DeletedAt.install(Post)
+      expect(Post.const_defined?(:All)).to be_truthy
+      expect(Post.const_defined?(:Deleted)).to be_truthy
     end
 
     it 'sets the correct table name for modified class' do
-      DeletedAt.install(Book)
-      expect(Book.table_name).to eql('documents')
-      expect(Book::All.table_name).to eql('documents/all')
-      expect(Book::Deleted.table_name).to eql('documents/deleted')
+      DeletedAt.install(Post)
+      expect(Post.table_name).to eql('documents')
+      expect(Post::All.table_name).to eql('documents/all')
+      expect(Post::Deleted.table_name).to eql('documents/deleted')
     end
   end
 
   describe '#uninstall for model with customized table_name' do
     before(:each) do
-      DeletedAt.install(Book)
+      DeletedAt.install(Post)
     end
 
     it 'should not raise error' do
-      expect{ DeletedAt.uninstall(Book) }.to_not raise_error()
+      expect{ DeletedAt.uninstall(Post) }.to_not raise_error()
     end
 
     it 'should remove model extensions' do
-      DeletedAt.uninstall(Book)
-      expect(Book.const_defined?(:All)).to be_falsy
-      expect(Book.const_defined?(:Deleted)).to be_falsy
+      DeletedAt.uninstall(Post)
+      expect(Post.const_defined?(:All)).to be_falsy
+      expect(Post.const_defined?(:Deleted)).to be_falsy
     end
   end
 
@@ -125,12 +126,12 @@ describe '#install for namespaced model' do
 
     it 'should have a view for all non-deleted books' do
       DeletedAt.install(Animals::Dog)
-      expect(ActiveRecord::Base.connection.table_exists?('dogs')).to be_truthy
+      expect(ActiveRecord::Base.connection.view_exists?('dogs')).to be_truthy
     end
 
     it 'should have a view for all deleted books' do
       DeletedAt.install(Animals::Dog)
-      expect(ActiveRecord::Base.connection.table_exists?('dogs/deleted')).to be_truthy
+      expect(ActiveRecord::Base.connection.view_exists?('dogs/deleted')).to be_truthy
     end
 
     it 'creates the DeletedAt class extensions' do
