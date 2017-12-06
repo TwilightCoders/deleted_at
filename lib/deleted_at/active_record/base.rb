@@ -17,19 +17,13 @@ module DeletedAt
 
         def with_deleted_at(options={})
 
-          return DeletedAt.logger.warn("No DB connection found; skipping deleted_at initialization") unless ::ActiveRecord::Base.connected?
-
           DeletedAt::ActiveRecord::Base.parse_options(self, options)
 
-          unless has_deleted_at_views?
-            return DeletedAt.logger.warn("You're trying to use `with_deleted_at` on #{name} but you have not installed the views, yet.")
-          end
+          return DeletedAt.logger.warn("You're trying to use `with_deleted_at` on #{name} but you have not installed the views, yet.") unless
+            has_deleted_at_views?
 
-          unless has_deleted_at_column?
-            return DeletedAt.logger.warn("Missing `#{deleted_at_column}` in `#{name}` when trying to employ `deleted_at`")
-          end
-
-          self.archive_with_deleted_at = true
+          return DeletedAt.logger.warn("Missing `#{deleted_at_column}` in `#{name}` when trying to employ `deleted_at`") unless
+            has_deleted_at_column?
 
           # We are confident at this point that the tables and views have been setup.
           # We need to do a bit of wizardy by setting the table name to the actual table
@@ -77,6 +71,7 @@ module DeletedAt
       end
 
       def self.remove_class_views(model)
+        model.archive_with_deleted_at = false
         model.send(:remove_const, :All) if model.const_defined?(:All)
         model.send(:remove_const, :Deleted) if model.const_defined?(:Deleted)
       end
@@ -87,6 +82,7 @@ module DeletedAt
 
 
       def self.setup_class_views(model)
+        model.archive_with_deleted_at = true
         model.const_set(:All, Class.new(model) do |klass|
           class_eval <<-AAA
             self.table_name = '#{::DeletedAt::Views.all_table(klass)}'
