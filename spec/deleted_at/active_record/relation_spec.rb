@@ -53,7 +53,7 @@ describe DeletedAt::ActiveRecord::Relation do
         User.create(name: 'john')
         User.create(name: 'sally')
 
-        User.all.destroy_all(name: 'bob')
+        User.where(name: 'bob').destroy_all
 
         expect(User.count).to eq(2)
         expect(User::All.count).to eq(3)
@@ -69,7 +69,8 @@ describe DeletedAt::ActiveRecord::Relation do
         Animals::Dog.create(name: 'john')
         Animals::Dog.create(name: 'sally')
 
-        Animals::Dog.all.delete_all
+        # conditions should not matter
+        Animals::Dog.all.delete_all(name: 'bob')
 
         expect(Animals::Dog.count).to eq(0)
         expect(Animals::Dog::All.count).to eq(3)
@@ -83,7 +84,7 @@ describe DeletedAt::ActiveRecord::Relation do
         Animals::Dog.create(name: 'john')
         Animals::Dog.create(name: 'sally')
 
-        Animals::Dog.all.delete_all(name: 'bob')
+        Animals::Dog.where(name: 'bob').delete_all
 
         expect(Animals::Dog.count).to eq(2)
         expect(Animals::Dog::All.count).to eq(3)
@@ -132,7 +133,7 @@ describe DeletedAt::ActiveRecord::Relation do
         Comment.create(title: 'Disagree')
         Comment.create(title: 'Defer')
 
-        Comment.all.destroy_all(title: 'Disagree')
+        Comment.where(title: 'Disagree').destroy_all
 
         expect(Comment.count).to eq(2)
       end
@@ -154,7 +155,7 @@ describe DeletedAt::ActiveRecord::Relation do
         Comment.create(title: 'Disagree')
         Comment.create(title: 'Defer')
 
-        Comment.all.delete_all(title: 'Agree')
+        Comment.where(title: 'Agree').delete_all
 
         expect(Comment.count).to eq(2)
       end

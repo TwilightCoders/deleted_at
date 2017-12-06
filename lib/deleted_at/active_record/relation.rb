@@ -23,15 +23,18 @@ module DeletedAt
       #
       #   Post.limit(100).delete_all
       #   # => ActiveRecord::ActiveRecordError: delete_all doesn't support limit
-      def delete_all(conditions = nil)
+      def delete_all(*args)
+        conditions = args.pop
         if archive_with_deleted_at?
           if conditions
-            where(conditions).update_all(klass.deleted_at_attributes)
-          else
-            update_all(klass.deleted_at_attributes)
+            ActiveSupport::Deprecation.warn(<<-MESSAGE.squish)
+              Passing conditions to delete_all is not supported in DeletedAt
+              To achieve the same use where(conditions).delete_all.
+            MESSAGE
           end
+          update_all(klass.deleted_at_attributes)
         else
-          super
+          super() # Specifically drop args
         end
       end
 
