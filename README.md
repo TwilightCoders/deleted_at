@@ -11,7 +11,7 @@ DeletedAt leverages the power of SQL views to achieve the same effect. It also t
 
 ## Requirements
 
-`DeletedAt` requires PostgreSQL 9.1+ and Ruby 2.0.0+ (as the `pg` gem requires Ruby 2.0.0).
+`DeletedAt` requires PostgreSQL 9.1+ and Ruby 2.0+ (as the `pg` gem requires Ruby 2.0.0).
 
 ## Installation
 
@@ -31,19 +31,17 @@ Or install it yourself as:
 
 ## Usage
 
-Using `DeletedAt` is very simple. It follows a familiar pattern seen throughout the rest of the Ruby/Rails community.
+Invoking `with_deleted_at` sets the class up to use the `deleted_at` functionality.
 
 ```ruby
 class User < ActiveRecord::Base
-  # Feel free to include/extend other modules before or after, as you see fit...
-
   with_deleted_at
 
   # the rest of your model code...
 end
 ```
 
-You'll (probably) need to migrate your database for `deleted_at` to work properly.
+To work properly, the tables that back these models must have a `deleted_at` timestamp column. Additionally, you'll (probably) need to set up the views for each particular model. This is done by invoking `DeletedAt.install(YourModel)`. _(Note the order of operations below for migrating up and down)_
 
 ```ruby
 class AddDeletedAtColumnToUsers < ActiveRecord::Migration
@@ -63,13 +61,37 @@ class AddDeletedAtColumnToUsers < ActiveRecord::Migration
 end
 ```
 
+If you're starting with a brand-new table, the existing `timestamps` DSL has been extended to accept `deleted_at: true` as an option, for convenience. Or you can do it seperately as shown above.
+
+```ruby
+class CreatCommentsTable < ActiveRecord::Migration
+
+  def up
+    create_table :comments do |t|
+      # ...
+      #  to the `timestamps` DSL
+      t.timestamps null: false, deleted_at: true
+    end
+
+    DeletedAt.install(Comment)
+  end
+
+  def down
+    DeletedAt.uninstall(Comment)
+
+    drop_table :comments
+  end
+
+end
+```
+
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+After checking out the repo, run `bundle` to install dependencies. Then, run `bundle exec rspec` to run the tests.
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/deleted_at. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
+Bug reports and pull requests are welcome on GitHub at https://github.com/TwilightCoders/deleted_at. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
 
 ## License
 
