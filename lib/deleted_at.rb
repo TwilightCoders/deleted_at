@@ -20,12 +20,14 @@ module DeletedAt
   end
 
   def self.load
-    ::ActiveRecord::Relation.send :include, DeletedAt::ActiveRecord::Relation
+    ::ActiveRecord::Relation.send :prepend, DeletedAt::ActiveRecord::Relation
     ::ActiveRecord::Base.send :include, DeletedAt::ActiveRecord::Base
     ::ActiveRecord::ConnectionAdapters::TableDefinition.send :prepend, DeletedAt::ActiveRecord::ConnectionAdapters::TableDefinition
   end
 
   def self.install(model)
+    return false unless model.has_deleted_at_column?
+
     DeletedAt::Views.install_present_view(model)
     DeletedAt::Views.install_deleted_view(model)
 
@@ -35,11 +37,13 @@ module DeletedAt
   end
 
   def self.uninstall(model)
+    return false unless model.has_deleted_at_column?
+
     DeletedAt::Views.uninstall_deleted_view(model)
     DeletedAt::Views.uninstall_present_view(model)
 
     # We've removed the database views, now remove the class extensions
-    model.remove_class_views
+    DeletedAt::ActiveRecord::Base.remove_class_views(model)
   end
 
   def self.testify(value)

@@ -7,17 +7,16 @@ module DeletedAt
       extend ActiveSupport::Concern
 
       included do
-        class_attribute :deleted_at_column, :original_table_name,
-          :deleted_by_column, :deleted_by_class, :deleted_by_primary_key
+        class_attribute :archive_with_deleted_at
+        class_attribute :deleted_at_column
 
-        class << self
           [:archive_with_deleted_at?, :archive_with_deleted_by?].each do |sym|
             define_method(sym) do
-              false
+              self.class.archive_with_deleted_at
             end
           end
-        end
 
+        self.archive_with_deleted_at = false
       end
 
       module ClassMethods
@@ -26,106 +25,55 @@ module DeletedAt
 
           return DeletedAt.logger.warn("No DB connection found; skipping deleted_at initialization") unless ::ActiveRecord::Base.connected?
 
-          parse_options(options)
+          DeletedAt::ActiveRecord::Base.parse_options(self, options)
 
-          unless ::DeletedAt::Views.all_table_exists?(self) && ::DeletedAt::Views.deleted_view_exists?(self)
+          unless has_deleted_at_views?
             return DeletedAt.logger.warn("You're trying to use `with_deleted_at` on #{name} but you have not installed the views, yet.")
           end
 
-          unless columns.map(&:name).include?(deleted_at_column)
+          unless has_deleted_at_column?
             return DeletedAt.logger.warn("Missing `#{deleted_at_column}` in `#{name}` when trying to employ `deleted_at`")
           end
 
-          [:archive_with_deleted_at?, :archive_with_deleted_by?].each do |sym|
-            class_eval <<-BBB
-              def self.#{sym}
-                true
-              end
-            BBB
-          end
-
+          self.archive_with_deleted_at = true
 
           # We are confident at this point that the tables and views have been setup.
           # We need to do a bit of wizardy by setting the table name to the actual table
           # (at this point: model/all), such that the model has all the information
-          # regarding its structure and intended behavior. Calling primary_key loads the
-          # table data into the class.
-          self.original_table_name = self.table_name
-          self.table_name = ::DeletedAt::Views.all_table(self)
-          primary_key = self.primary_key
-          self.table_name = self.original_table_name
-
-          setup_class_views
-          with_deleted_by
-        end
-
-        def remove_class_views
-          self.send(:remove_const, :All) if self.const_defined?(:All)
-          self.send(:remove_const, :Deleted) if self.const_defined?(:Deleted)
-        end
-
-        private
-
-        def parse_options(options)
-          self.deleted_at_column      = (options.try(:[], :deleted_at).try(:[], :column) || :deleted_at).to_s
-          self.deleted_by_column      = (options.try(:[], :deleted_by).try(:[], :column) || :deleted_by).to_s
-          self.deleted_by_class       = (options.try(:[], :deleted_by).try(:[], :class) || User)
-          self.deleted_by_primary_key = (options.try(:[], :deleted_by).try(:[], :primary_key) || deleted_by_class.try(:primary_key)).to_s
-        end
-
-        def deleted_by_class_is_delete_at(klass)
-          klass && (klass.archive_with_deleted_at? || self == klass)
-        end
-
-        def with_deleted_by
-          return unless (deleted_by_column && columns.map(&:name).include?(deleted_by_column) && deleted_by_class < ActiveRecord::Base)
-          self.deleted_by_class       = self.deleted_by_class.const_get(:All) if deleted_by_class_is_delete_at(self.deleted_by_class)
-
-          unless reflect_on_association(:destroyer)
-            class_eval do
-              belongs_to :destroyer, foreign_key: deleted_by_column, primary_key: deleted_by_primary_key, class_name: deleted_by_class.name
-            end
+          # regarding its structure and intended behavior. (e.g. setting primary key)
+          DeletedAt::Views.while_spoofing_table_name(self, ::DeletedAt::Views.all_table(self)) do
+            reset_primary_key
           end
+
+          DeletedAt::ActiveRecord::Base.setup_class_views(self)
         end
 
-        def refactor_validators
-          validators.each do |validator|
-            case validator
-            when ActiveRecord::Validations::UniquenessValidator
 
-            end
-          end
+
+        def has_deleted_at_column?
+          columns.map(&:name).include?(deleted_at_column)
         end
 
-        def setup_class_views
-          self.const_set(:All, Class.new(self) do |klass|
-            class_eval <<-AAA
-              self.table_name = '#{::DeletedAt::Views.all_table(klass)}'
-            AAA
-          end)
-
-          self.const_set(:Deleted, Class.new(self) do |klass|
-            class_eval <<-AAA
-              self.table_name = '#{::DeletedAt::Views.deleted_view(klass)}'
-            AAA
-          end)
+        def has_deleted_at_views?
+          ::DeletedAt::Views.all_table_exists?(self) && ::DeletedAt::Views.deleted_view_exists?(self)
         end
 
-      end
+        def deleted_at_attributes
+          attributes = {
+            deleted_at_column => Time.now.utc
+          }
 
-      [:archive_with_deleted_at?, :archive_with_deleted_by?].each do |sym|
-        class_eval <<-BBB
-          def #{sym}
-            self.class.#{sym}
-          end
-        BBB
-      end
+
+          attributes
+        end
+
+      end # End ClassMethods
 
       def destroy
-        if archive_with_deleted_at?
+        if self.archive_with_deleted_at?
           with_transaction_returning_status do
             run_callbacks :destroy do
-              update_columns(deleted_at_attributes)
+              update_columns(self.class.deleted_at_attributes)
               self
             end
           end
@@ -134,28 +82,31 @@ module DeletedAt
         end
       end
 
-      private
-
-      def deleted_at_attributes
-        attributes = {
-          deleted_at_column => Time.now.utc
-        }
-
-        # attributes.merge({
-        #   deleted_by_column => DeletedAt::who_by
-        # }) if by_who?
-
-        attributes
+      def self.remove_class_views(model)
+        model.send(:remove_const, :All) if model.const_defined?(:All)
+        model.send(:remove_const, :Deleted) if model.const_defined?(:Deleted)
       end
 
-      def deleted_at_column
-        self.class.deleted_at_column
+      def self.parse_options(model, options)
+        model.deleted_at_column      = (options.try(:[], :deleted_at).try(:[], :column) || :deleted_at).to_s
       end
 
-      def deleted_by_column
-        self.class.deleted_by_column
+
+      def self.setup_class_views(model)
+        model.const_set(:All, Class.new(model) do |klass|
+          class_eval <<-AAA
+            self.table_name = '#{::DeletedAt::Views.all_table(klass)}'
+          AAA
+        end)
+
+        model.const_set(:Deleted, Class.new(model) do |klass|
+          class_eval <<-AAA
+            self.table_name = '#{::DeletedAt::Views.deleted_view(klass)}'
+          AAA
+        end)
       end
 
     end
+
   end
 end

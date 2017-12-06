@@ -4,11 +4,6 @@ module DeletedAt
     # = Active Record Relation
     module Relation
 
-      def deleted_at_attributes
-        # We _do_ have klass at this point
-        { klass.deleted_at_column => Time.now.utc }
-      end
-
       # Deletes the records matching +conditions+ without instantiating the records
       # first, and hence not calling the +destroy+ method nor invoking callbacks. This
       # is a single SQL DELETE statement that goes straight to the database, much more
@@ -30,11 +25,16 @@ module DeletedAt
       #   # => ActiveRecord::ActiveRecordError: delete_all doesn't support limit
       def delete_all(conditions = nil)
         if archive_with_deleted_at?
-          where(conditions).update_all(deleted_at_attributes)
+          if conditions
+            where(conditions).update_all(klass.deleted_at_attributes)
+          else
+            update_all(klass.deleted_at_attributes)
+          end
         else
           super
         end
       end
+
     end
   end
 end
