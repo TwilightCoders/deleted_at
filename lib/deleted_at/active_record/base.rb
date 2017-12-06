@@ -10,12 +10,6 @@ module DeletedAt
         class_attribute :archive_with_deleted_at
         class_attribute :deleted_at_column
 
-          [:archive_with_deleted_at?, :archive_with_deleted_by?].each do |sym|
-            define_method(sym) do
-              self.class.archive_with_deleted_at
-            end
-          end
-
         self.archive_with_deleted_at = false
       end
 
