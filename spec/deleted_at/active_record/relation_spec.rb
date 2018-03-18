@@ -1,11 +1,10 @@
 require "spec_helper"
 
-describe DeletedAt::ActiveRecord::Relation do
+describe DeletedAt::ActiveRecord::Base do
 
   context "models using deleted_at" do
 
     it "#destroy should set deleted_at" do
-      DeletedAt.install(User)
       User.create(name: 'bob')
       User.create(name: 'john')
       User.create(name: 'sally')
@@ -15,11 +14,9 @@ describe DeletedAt::ActiveRecord::Relation do
       expect(User.count).to eq(2)
       expect(User::All.count).to eq(3)
       expect(User::Deleted.count).to eq(1)
-      DeletedAt.uninstall(User)
     end
 
     it "#delete should set deleted_at" do
-      DeletedAt.install(User)
       User.create(name: 'bob')
       User.create(name: 'john')
       User.create(name: 'sally')
@@ -29,12 +26,27 @@ describe DeletedAt::ActiveRecord::Relation do
       expect(User.count).to eq(2)
       expect(User::All.count).to eq(3)
       expect(User::Deleted.count).to eq(1)
-      DeletedAt.uninstall(User)
+    end
+
+    context 'associations' do
+
+      it 'should scope properly' do
+
+        user = User.create(name: 'bob')
+        (1..4).each do
+          Post.create(user: user)
+        end
+
+        user.posts.first.delete
+
+        expect(user.posts.count).to eq(3)
+
+      end
+
     end
 
     context '#destroy_all' do
       it "should set deleted_at" do
-        DeletedAt.install(User)
         User.create(name: 'bob')
         User.create(name: 'john')
         User.create(name: 'sally')
@@ -44,11 +56,9 @@ describe DeletedAt::ActiveRecord::Relation do
         expect(User.count).to eq(0)
         expect(User::All.count).to eq(3)
         expect(User::Deleted.count).to eq(3)
-        DeletedAt.uninstall(User)
       end
 
       it "with conditions should set deleted_at" do
-        DeletedAt.install(User)
         User.create(name: 'bob')
         User.create(name: 'john')
         User.create(name: 'sally')
@@ -58,13 +68,11 @@ describe DeletedAt::ActiveRecord::Relation do
         expect(User.count).to eq(2)
         expect(User::All.count).to eq(3)
         expect(User::Deleted.count).to eq(1)
-        DeletedAt.uninstall(User)
       end
     end
 
     context '#delete_all' do
       it "should set deleted_at" do
-        DeletedAt.install(Animals::Dog)
         Animals::Dog.create(name: 'bob')
         Animals::Dog.create(name: 'john')
         Animals::Dog.create(name: 'sally')
@@ -75,11 +83,9 @@ describe DeletedAt::ActiveRecord::Relation do
         expect(Animals::Dog.count).to eq(0)
         expect(Animals::Dog::All.count).to eq(3)
         expect(Animals::Dog::Deleted.count).to eq(3)
-        DeletedAt.uninstall(Animals::Dog)
       end
 
       it "with conditions should set deleted_at" do
-        DeletedAt.install(Animals::Dog)
         Animals::Dog.create(name: 'bob')
         Animals::Dog.create(name: 'john')
         Animals::Dog.create(name: 'sally')
@@ -89,7 +95,6 @@ describe DeletedAt::ActiveRecord::Relation do
         expect(Animals::Dog.count).to eq(2)
         expect(Animals::Dog::All.count).to eq(3)
         expect(Animals::Dog::Deleted.count).to eq(1)
-        DeletedAt.uninstall(Animals::Dog)
       end
     end
 

@@ -24,4 +24,5 @@ ActiveRecord::Schema.define do
     t.string :name
     t.timestamps null: false, deleted_at: true
   end
+
 end

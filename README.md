@@ -6,13 +6,12 @@
 
 # DeletedAt
 
-Deleting data is never good. A common solution is to use `default_scope`, but conventional wisdom (and for good reason) deams this a bad practice. So how do we achieve the same effect with minimal intervention. What we're looking for is the cliche "clean" solution.
-
-DeletedAt leverages the power of SQL views to achieve the same effect. It also takes advantage of Ruby's flexibility.
+Hide your "deleted" data (unless specifically asked for) without resorting to `default_scope` by leveraging in-line sub-selects.
 
 ## Requirements
 
-`DeletedAt` requires PostgreSQL 9.1+ and Ruby 2.0+ (as the `pg` gem requires Ruby 2.0.0).
+- Ruby 2.3+
+- ActiveRecord 4.2+
 
 ## Installation
 
@@ -42,20 +41,16 @@ class User < ActiveRecord::Base
 end
 ```
 
-To work properly, the tables that back these models must have a `deleted_at` timestamp column. Additionally, you'll (probably) need to set up the views for each particular model. This is done by invoking `DeletedAt.install(YourModel)`. _(Note the order of operations below for migrating up and down)_
+To work properly, the tables that back these models must have a `deleted_at` timestamp column.
 
 ```ruby
 class AddDeletedAtColumnToUsers < ActiveRecord::Migration
 
   def up
     add_column :users, :deleted_at, 'timestamp with time zone'
-
-    DeletedAt.install(User)
   end
 
   def down
-    DeletedAt.uninstall(User)
-
     remove_column :users, :deleted_at, 'timestamp with time zone'
   end
 
@@ -73,13 +68,9 @@ class CreatCommentsTable < ActiveRecord::Migration
       #  to the `timestamps` DSL
       t.timestamps null: false, deleted_at: true
     end
-
-    DeletedAt.install(Comment)
   end
 
   def down
-    DeletedAt.uninstall(Comment)
-
     drop_table :comments
   end
 
