@@ -83,16 +83,13 @@ module DeletedAt
 
       def self.setup_class_views(model)
         model.archive_with_deleted_at = true
+
         model.const_set(:All, Class.new(model) do |klass|
-          class_eval <<-AAA
-            self.table_name = '#{::DeletedAt::Views.all_table(klass)}'
-          AAA
+          self.table_name = DeletedAt::Views.all_table(model)
         end)
 
         model.const_set(:Deleted, Class.new(model) do |klass|
-          class_eval <<-AAA
-            self.table_name = '#{::DeletedAt::Views.deleted_view(klass)}'
-          AAA
+          self.table_name = DeletedAt::Views.deleted_view(model)
         end)
       end
 
