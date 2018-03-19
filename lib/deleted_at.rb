@@ -14,6 +14,4 @@ module DeletedAt
     end
   end
 
-  private
-
 end
