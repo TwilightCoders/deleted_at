@@ -5,6 +5,7 @@ module DeletedAt
 
   class << self
     attr_writer :logger
+    attr_accessor :registry
 
     def logger
       @logger ||= Logger.new($stdout).tap do |log|
@@ -13,5 +14,7 @@ module DeletedAt
       end
     end
   end
+
+  self.registry = Set.new
 
 end

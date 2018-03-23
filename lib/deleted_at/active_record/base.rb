@@ -38,6 +38,7 @@ module DeletedAt
             unfiltered_relation.from(at.to_sql)
           end
 
+          ::DeletedAt.registry.add(self)
           self.const_set(:All, self.unfiltered_relation)
           self.const_set(:Deleted, self.only_deleted)
         end
