@@ -6,6 +6,7 @@ module DeletedAt
   class << self
     attr_writer :logger
     attr_accessor :registry
+    attr_reader :disabled
 
     def logger
       @logger ||= Logger.new($stdout).tap do |log|
@@ -16,5 +17,28 @@ module DeletedAt
   end
 
   self.registry = Set.new
+  @disabled = false
+
+  def self.disabled?
+    @disabled == true
+  end
+
+  def self.disable
+    @disabled = true
+  end
+
+  def self.enable
+    @disabled = false
+  end
+
+  def self.install(model)
+    warn <<-STR
+    Great news! You're using the new and improved version of DeletedAt. No more table renaming.
+    You'll want to migrate your old models to use the new (non-view based) functionality.
+    STR
+  end
+
+  def self.uninstall(model)
+  end
 
 end
