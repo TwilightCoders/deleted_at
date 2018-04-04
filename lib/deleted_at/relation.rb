@@ -4,26 +4,26 @@ module DeletedAt
 
     def self.prepended(subclass)
       subclass.class_eval do
-        attr_writer :subselect_scope
+        attr_writer :deleted_at_scope
       end
     end
 
-    def subselect_scope
-      @subselect_scope ||= :Present
+    def deleted_at_scope
+      @deleted_at_scope ||= :Present
     end
 
-    def arel_for_subselect
-      scoped_arel = case subselect_scope
+    def deleted_at_select
+      scoped_arel = case deleted_at_scope
       when :Deleted
-        table.where(table[deleted_at_column].not_eq(nil))
+        table.where(table[deleted_at[:column]].not_eq(nil))
       when :Present
-        table.where(table[deleted_at_column].eq(nil))
+        table.where(table[deleted_at[:column]].eq(nil))
       end
     end
 
 
-    def build_subselect(arel)
-      if (subselect = arel_for_subselect)
+    def deleted_at_subselect(arel)
+      if (subselect = deleted_at_select)
         subselect.project(arel_columns(columns.map(&:name)))
         Arel::Nodes::TableAlias.new(Arel::Nodes::Grouping.new(subselect.ast), table_name)
       end
@@ -31,7 +31,8 @@ module DeletedAt
 
     def build_arel
       super.tap do |arel|
-        if (subselect = build_subselect(arel)) && !arel.froms.include?(subselect)
+        if (subselect = deleted_at_subselect(arel)) && !arel.froms.include?(subselect)
+          DeletedAt.logger.debug("DeletedAt sub-selecting from #{subselect.to_sql}")
           arel.from(subselect)
         end
       end

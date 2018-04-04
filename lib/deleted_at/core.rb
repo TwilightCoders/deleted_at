@@ -1,43 +1,47 @@
 require 'deleted_at/active_record'
 
 module DeletedAt
+
   module Core
 
     def self.prepended(subclass)
       class << subclass
-        cattr_accessor :deleted_at_column do
+        cattr_accessor :deleted_at do
           nil
         end
+        alias all_without_deleted_at all
       end
+
       subclass.extend(ClassMethods)
+    end
+
+    def self.raise_missing(klass)
+      message = "Missing `#{klass.deleted_at[:column]}` in `#{klass.name}` when trying to employ `deleted_at`"
+      raise(DeletedAt::MissingColumn, message)
+    end
+
+    def self.has_deleted_at_column?(klass)
+      klass.columns.map(&:name).include?(klass.deleted_at[:column].to_s)
     end
 
     module ClassMethods
 
-      def with_deleted_at(options={})
-
-        # DeletedAt::ActiveRecord::Base.parse_options(self, options)
-        self.deleted_at_column = (options.dig(:deleted_at, :column) || :deleted_at).to_s
-
-        raise(DeletedAt::MissingColumn, "Missing `#{deleted_at_column}` in `#{name}` when trying to employ `deleted_at`") unless
-            has_deleted_at_column?
-
+      def with_deleted_at(options={}, &block)
         return if ::DeletedAt.disabled?
+
+        self.deleted_at = DeletedAt::DEFAULT_OPTIONS.merge(options)
+        self.deleted_at[:proc] = block if block_given?
+
+        DeletedAt::Core.raise_missing(self) unless Core.has_deleted_at_column?(self)
 
         self.prepend(DeletedAt::ActiveRecord)
 
       end
 
-      def has_deleted_at_column?
-        columns.map(&:name).include?(deleted_at_column)
-      end
-
       def deleted_at_attributes
         attributes = {
-          deleted_at_column => Time.now.utc
+          deleted_at[:column] => deleted_at[:proc].call
         }
-
-        attributes
       end
 
     end # End ClassMethods

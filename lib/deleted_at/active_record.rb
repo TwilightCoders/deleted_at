@@ -5,17 +5,6 @@ module DeletedAt
   module ActiveRecord
 
     def self.prepended(subclass)
-      class << subclass
-        cattr_accessor :scoped_deleted do
-          nil
-        end
-        cattr_accessor :scoped_present do
-          nil
-        end
-
-        alias unscoped_all all unless method_defined?(:unscoped_all)
-      end
-
       subclass.const_get(:ActiveRecord_Relation).prepend(DeletedAt::Relation)
       subclass.const_get(:ActiveRecord_AssociationRelation).prepend(DeletedAt::Relation)
       subclass.extend(ClassMethods)
@@ -25,8 +14,7 @@ module DeletedAt
 
       def inherited(subclass)
         super
-        # TODO: Forward options
-        subclass.with_deleted_at
+        subclass.with_deleted_at self.deleted_at
       end
 
       def all
@@ -36,11 +24,8 @@ module DeletedAt
       def const_missing(const)
         case const
         when :All, :Deleted, :Present
-          unscoped_all.tap do |rel|
-            rel.subselect_scope = const
-            # ScopeRegistry.set(const) do
-            #   arel.subselect = scoped_alias(arel)
-            # end
+          all_without_deleted_at.tap do |rel|
+            rel.deleted_at_scope = const
           end
         else super
         end

@@ -2,14 +2,8 @@ require "spec_helper"
 
 describe DeletedAt::ActiveRecord do
 
-  context "inheritence" do
-
-    xit "does a thing" do
-      Animals::Cat.create(name: 'fluffy')
-      Animals::MeanCat.create(name: 'jerkface')
-      # binding.pry
-    end
-
+  it 'should let other missing consts through' do
+    expect{ Admin::Blarg }.to raise_error(NameError)
   end
 
 end

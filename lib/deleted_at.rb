@@ -1,5 +1,4 @@
 require 'deleted_at/version'
-require 'core_ext/thread'
 require 'deleted_at/railtie' if defined?(Rails::Railtie)
 
 module DeletedAt
@@ -7,12 +6,12 @@ module DeletedAt
   MissingColumn = Class.new(StandardError)
 
   DEFAULT_OPTIONS = {
-    column: :deleted_at
+    column: :deleted_at,
+    proc: -> { Time.now.utc }
   }
 
   class << self
     attr_writer :logger
-    attr_accessor :registry
     attr_reader :disabled
 
     def logger
@@ -23,7 +22,6 @@ module DeletedAt
     end
   end
 
-  self.registry = Set.new
   @disabled = false
 
   def self.disabled?
@@ -38,14 +36,20 @@ module DeletedAt
     @disabled = false
   end
 
+  def self.gemspec
+    @gemspec ||= eval(`gem spec deleted_at --ruby`).freeze
+  end
+
   def self.install(model)
-    warn <<-STR
+    logger.warn <<-STR
     Great news! You're using the new and improved version of DeletedAt. No more table renaming.
     You'll want to migrate your old models to use the new (non-view based) functionality.
+    Follow the instructions at #{gemspec.homepage}.
     STR
   end
 
   def self.uninstall(model)
+
   end
 
 end
