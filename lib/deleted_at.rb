@@ -1,7 +1,14 @@
 require 'deleted_at/version'
+require 'core_ext/thread'
 require 'deleted_at/railtie' if defined?(Rails::Railtie)
 
 module DeletedAt
+
+  MissingColumn = Class.new(StandardError)
+
+  DEFAULT_OPTIONS = {
+    column: :deleted_at
+  }
 
   class << self
     attr_writer :logger

@@ -4,6 +4,7 @@ ActiveRecord::Schema.define do
   create_table :users, schema: :public, force: true do |t|
     t.string :name
     t.string :email, index: :btree
+    t.integer :kind, default: 0
     t.timestamps null: false, deleted_at: true
   end
 
@@ -22,6 +23,12 @@ ActiveRecord::Schema.define do
 
   create_table :dogs, force: true do |t|
     t.string :name
+    t.timestamps null: false, deleted_at: true
+  end
+
+  create_table :cats, force: true do |t|
+    t.string :name
+    # t.string :type
     t.timestamps null: false, deleted_at: true
   end
 

@@ -1,6 +1,6 @@
 require "spec_helper"
 
-describe DeletedAt::ActiveRecord::Base do
+describe DeletedAt::Core do
 
   context "models using deleted_at" do
 
@@ -37,7 +37,7 @@ describe DeletedAt::ActiveRecord::Base do
           Post.create(user: user)
         end
 
-        user.posts.first.delete
+        post = user.posts.first.delete
 
         expect(user.posts.count).to eq(3)
 

@@ -4,4 +4,9 @@ class User < ::ActiveRecord::Base
   has_many :posts
   has_many :comments
 
+  scope :admins, -> {
+    # select(arel_table[Arel.star], arel_table[:tableoid])#
+    where(kind: 1)
+  }
+
 end

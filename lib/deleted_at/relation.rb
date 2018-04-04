@@ -1,5 +1,42 @@
 module DeletedAt
+
   module Relation
+
+    def self.prepended(subclass)
+      subclass.class_eval do
+        attr_writer :subselect_scope
+      end
+    end
+
+    def subselect_scope
+      @subselect_scope ||= :Present
+    end
+
+    def arel_for_subselect
+      scoped_arel = case subselect_scope
+      when :Deleted
+        table.where(table[deleted_at_column].not_eq(nil))
+      when :Present
+        table.where(table[deleted_at_column].eq(nil))
+      end
+    end
+
+
+    def build_subselect(arel)
+      if (subselect = arel_for_subselect)
+        subselect.project(arel_columns(columns.map(&:name)))
+        Arel::Nodes::TableAlias.new(Arel::Nodes::Grouping.new(subselect.ast), table_name)
+      end
+    end
+
+    def build_arel
+      super.tap do |arel|
+        if (subselect = build_subselect(arel)) && !arel.froms.include?(subselect)
+          arel.from(subselect)
+        end
+      end
+    end
+
     # Deletes the records matching +conditions+ without instantiating the records
     # first, and hence not calling the +destroy+ method nor invoking callbacks. This
     # is a single SQL DELETE statement that goes straight to the database, much more

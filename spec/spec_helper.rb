@@ -9,6 +9,7 @@ SimpleCov.start do
   add_filter 'spec'
 end
 
+
 Combustion.path = 'spec/support/rails'
 Combustion.initialize! :active_record
 
