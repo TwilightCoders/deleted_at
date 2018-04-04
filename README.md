@@ -6,7 +6,7 @@
 
 # DeletedAt
 
-Hide your "deleted" data (unless specifically asked for) without resorting to `default_scope` by leveraging in-line sub-selects.
+Hide your "deleted" data (unless specifically asked for) without resorting to `default_scope` by leveraging in-line sub-selects. (See the [Upgrading](#upgrading) section)
 
 ## Requirements
 
@@ -77,6 +77,42 @@ class CreatCommentsTable < ActiveRecord::Migration
 end
 ```
 
+## [Upgrading](#upgrading)
+
+If you've used `deleted_at` prior to v0.5.0, you'll need to migrate your schema. The new version of `deleted_at` no longer uses views, instead constructing a subselect on the relations. This significantly reduces code polution and monkey patching, as well as reducing the runtime memory usage for rails. Your Database will look (and be) a lot cleaner with no `deleted_at` views and your ERDs will be much cleaner as well.
+
+Here is an example of a migration for upgrading
+```
+require 'deleted_at/legacy'
+
+DeletedAt.disable
+
+class UpgradeDeletedAt < ActiveRecord::Migration
+  def up
+    # hip hip hooray!
+    models.each do |model|
+      DeletedAt::Legacy.uninstall(model)
+    end
+  end
+
+  def down
+    # booo hiss
+    models.each do |model|
+      DeletedAt::Legacy.install(model)
+    end
+  end
+
+  private
+
+  def models
+    [
+      User,
+      Post
+    ]
+  end
+end
+
+```
 ## Development
 
 After checking out the repo, run `bundle` to install dependencies. Then, run `bundle exec rspec` to run the tests.
