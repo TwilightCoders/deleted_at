@@ -11,7 +11,7 @@ Hide your "deleted" data (unless specifically asked for) without resorting to `d
 ## Requirements
 
 - Ruby 2.3+
-- ActiveRecord 4.2+
+- ActiveRecord 4.1+
 
 ## Installation
 
