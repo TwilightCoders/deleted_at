@@ -7,15 +7,16 @@ Gem::Specification.new do |spec|
   spec.email         = ['dale@twilightcoders.net']
 
   spec.summary       = %q{Soft delete your data, but keep it clean.}
-  spec.description   = %q{Default scopes are bad. Don't delete your data. DeletedAt, I choose you!}
+  spec.description   = %q{Default scopes are bad. Don't delete your data.}
   spec.homepage      = "https://github.com/TwilightCoders/deleted_at"
   spec.license       = "MIT"
 
-  if spec.respond_to?(:metadata)
-    spec.metadata['allowed_push_host'] = 'https://rubygems.org'
-  else
-    raise 'RubyGems 2.0 or newer is required to protect against public gem pushes.'
-  end
+  spec.post_install_message = <<~STR
+    If you're upgrading from < 0.5.0, please follow the upgrade instructions
+    on #{spec.homepage}.
+  STR
+
+  spec.metadata['allowed_push_host'] = 'https://rubygems.org'
 
   spec.files         = Dir['CHANGELOG.md', 'README.md', 'LICENSE', 'lib/**/*']
   spec.bindir        = 'bin'
