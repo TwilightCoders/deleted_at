@@ -2,7 +2,7 @@
 [![Build Status ](https://travis-ci.org/TwilightCoders/deleted_at.svg)](https://travis-ci.org/TwilightCoders/deleted_at)
 [![Code Climate ](https://api.codeclimate.com/v1/badges/762cdcd63990efa768b0/maintainability)](https://codeclimate.com/github/TwilightCoders/deleted_at/maintainability)
 [![Test Coverage](https://codeclimate.com/github/TwilightCoders/deleted_at/badges/coverage.svg)](https://codeclimate.com/github/TwilightCoders/deleted_at/coverage)
-[![Dependencies ](https://gemnasium.com/badges/github.com/TwilightCoders/deleted_at.svg)](https://gemnasium.com/github.com/TwilightCoders/deleted_at)
+[![Dependencies ](https://badges.depfu.com/badges/5a2fe8068c0eaa5ad0e25a96373f1725/overview.svg)](https://depfu.com/github/TwilightCoders/deleted_at)
 
 # DeletedAt
 
