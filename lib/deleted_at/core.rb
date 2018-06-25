@@ -20,7 +20,7 @@ module DeletedAt
     end
 
     def self.has_deleted_at_column?(klass)
-      klass.columns.map(&:name).include?(klass.deleted_at[:column].to_s)
+      klass.columns.map(&:name).include?(klass.deleted_at.dig(:column).to_s)
     end
 
     module ClassMethods

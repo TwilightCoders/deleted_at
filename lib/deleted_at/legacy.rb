@@ -1,14 +1,14 @@
 module DeletedAt
   module Legacy
     def self.uninstall(model)
-      return false unless model.has_deleted_at_column?
+      return false unless Core.has_deleted_at_column?(model)
 
       uninstall_deleted_view(model)
       uninstall_present_view(model)
     end
 
     def self.install(model)
-      return false unless model.has_deleted_at_column?
+      return false unless Core.has_deleted_at_column?(model)
 
       install_present_view(model)
       install_deleted_view(model)
