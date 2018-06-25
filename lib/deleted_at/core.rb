@@ -6,9 +6,8 @@ module DeletedAt
 
     def self.prepended(subclass)
       class << subclass
-        cattr_accessor :deleted_at do
-          nil
-        end
+        cattr_accessor :deleted_at
+        self.deleted_at = {}
         alias all_without_deleted_at all
       end
 
