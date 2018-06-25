@@ -26,10 +26,10 @@ module DeletedAt
     module ClassMethods
 
       def with_deleted_at(options={}, &block)
-        return if ::DeletedAt.disabled?
-
         self.deleted_at = DeletedAt::DEFAULT_OPTIONS.merge(options)
         self.deleted_at[:proc] = block if block_given?
+
+        return if ::DeletedAt.disabled?
 
         DeletedAt::Core.raise_missing(self) unless Core.has_deleted_at_column?(self)
 
