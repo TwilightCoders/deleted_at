@@ -8,7 +8,7 @@ ActiveRecord::Schema.define do
     t.timestamps null: false, deleted_at: true
   end
 
-  create_table :documents, id: :bigserial, force: true do |t|
+  create_table :documents, force: true do |t|
     t.integer :user_id
     t.string :title
     t.timestamps null: false, deleted_at: true
