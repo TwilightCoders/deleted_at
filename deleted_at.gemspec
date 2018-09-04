@@ -24,7 +24,7 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ['lib']
 
-  rails_versions = ['>= 4.1', '< 6']
+  rails_versions = ['>= 4.2', '< 6']
   spec.required_ruby_version = '>= 2.3'
 
   spec.add_runtime_dependency 'activerecord', rails_versions
