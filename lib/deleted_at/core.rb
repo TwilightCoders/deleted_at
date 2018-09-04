@@ -8,7 +8,6 @@ module DeletedAt
       class << subclass
         cattr_accessor :deleted_at
         self.deleted_at = {}
-        alias all_without_deleted_at all
       end
 
       subclass.extend(ClassMethods)
@@ -41,6 +40,12 @@ module DeletedAt
         attributes = {
           deleted_at[:column] => deleted_at[:proc].call
         }
+      end
+
+      def init_deleted_at_relations
+        instance_variable_get(:@relation_delegate_cache).each do |base, klass|
+          klass.send(:prepend, DeletedAt::Relation)
+        end
       end
 
     end # End ClassMethods
