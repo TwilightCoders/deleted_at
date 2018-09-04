@@ -21,7 +21,7 @@ ActiveRecord::Schema.define do
     t.timestamps null: false
   end
 
-  create_table :dogs, force: true do |t|
+  create_table 'animal/dogs', force: true do |t|
     t.string :name
     t.timestamps null: false, deleted_at: true
   end
