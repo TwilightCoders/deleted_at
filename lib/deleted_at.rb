@@ -41,10 +41,10 @@ module DeletedAt
   end
 
   def self.install(model)
-    logger.warn <<-STR
-    Great news! You're using the new and improved version of DeletedAt. No more table renaming.
-    You'll want to migrate your old models to use the new (non-view based) functionality.
-    Follow the instructions at #{gemspec.homepage}.
+    logger.warn <<~STR
+      Great news! You're using the new and improved version of DeletedAt. No more table renaming.
+      You'll want to migrate your old models to use the new (non-view based) functionality.
+      Follow the instructions at #{gemspec.homepage}.
     STR
   end
 
