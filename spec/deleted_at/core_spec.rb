@@ -30,14 +30,16 @@ describe DeletedAt::Core do
     expect(User::Deleted.first.class).to eq(User)
   end
 
-  it 'should not have ::Deleted as part of the class' do
-    User.create(name: 'bob')
-    User.create(name: 'john')
-    User.create(name: 'sally')
+  it 'works with complex eager loading' do
+    bob = User.create(name: 'bob')
+    (1..5).each do |i|
+      post = Post.create(title: "Post #{i}", user: bob)
+      (1..5).each do |j|
+        comment = Comment.create(title: "Comment #{j}", post: post, user: bob)
+      end
+    end
 
-    User.first.destroy
-
-    expect(User::Deleted.first.class).to eq(User)
+    expect(User.eager_load(posts: :comments).find_by(name: 'bob')).to eq(bob)
   end
 
   context 'with default_scope' do
