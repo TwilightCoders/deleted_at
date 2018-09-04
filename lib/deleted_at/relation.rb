@@ -30,7 +30,7 @@ module DeletedAt
     # Rails 4.x
     def from_value
       if (subselect = deleted_at_select)
-        [subselect, table_name]
+        [subselect, ::ActiveRecord::Base.connection.quote_table_name(table_name)]
       else
         super
       end
@@ -39,7 +39,7 @@ module DeletedAt
     # Rails 5.x
     def from_clause
       if (subselect = deleted_at_select)
-        ::ActiveRecord::Relation::FromClause.new(subselect, table_name)
+        ::ActiveRecord::Relation::FromClause.new(subselect, ::ActiveRecord::Base.connection.quote_table_name(table_name))
       else
         super
       end
