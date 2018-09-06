@@ -4,8 +4,8 @@ module DeletedAt
     def self.prepended(subclass)
       subclass.class_eval do
         attr_writer :deleted_at_scope
-        attr_reader :table_alias_name
-        attr_reader :external_from
+        attr_reader :subquery_name
+        attr_reader :selecting_from_deleted_at
       end
     end
 
@@ -33,82 +33,38 @@ module DeletedAt
     end
 
     def vanilla
-      # @vanilla ||= klass.const_get(:All).unscope(:where).freeze
       @vanilla ||= klass.unscoped.tap do |rel|
         rel.deleted_at_scope = :All
       end.freeze
     end
 
-    def table_name_literal
-      # ::ActiveRecord::Base.connection.quote_table_name(table_name)
-      @table_alias || Arel::Nodes::SqlLiteral.new(table_name)
-    end
-
-    # def build_arel(*args)
-    #   super.tap do |built_arel|
-    #     binding.pry
-    #     Thread.currently(:default_from, false) do
-    #       built_arel.from(build_from) if build_deleted_at_from?
-    #     end
-    #   end
-    # end
-
-    def from(*args)
-      @external_from = true
-      super
-    end
-
-    def build_from
-        binding.pry
-      super
-      # if (external_from)
-      #   super.tap do |super_from|
-      #     Thread.currently(:default_from, false) do
-      #       super_from.from(deleted_at_from) if build_deleted_at_from?
-      #     end
-      #   end
-      # elsif(build_deleted_at_from?)
-      #   Thread.currently(:default_from, false) do
-      #     deleted_at_from
-      #   end
-      # else
-      #   warn "How'd we get here"
-      # end
-    end
-
-    def as(other)
-      @table_alias_name = Arel::Nodes::SqlLiteral.new(other)
-      super
+    def set_subquery_name(value, subquery_name = nil)
+      @subquery_name ||= subquery_name || if Arel::Nodes::SqlLiteral == value&.right
+        value.right
+      end
     end
 
     def table_name_literal
-      table_alias_name || ::ActiveRecord::Base.connection.quote_table_name(table_name)
+      subquery_name || ::ActiveRecord::Base.connection.quote_table_name(table_name)
     end
 
     if Rails.gem_version < Gem::Version.new('5.0')
       def from_value
-        if external_from && (super_from = super)
-          super_from
-        elsif (subselect = deleted_at_select)
+        super || if (subselect = deleted_at_select)
           [subselect, table_name_literal]
         end
       end
-
-      # Meant to mimic the way ActiveRecord checks if it should build the from statement
-      def build_from?
-        !!from_value
-      end
     else
       def from_clause
-        if external_from && !(super_from = super).empty?
+        if !(super_from = super)&.empty?
           super_from
-        elsif (subselect = deleted_at_select)
-          ::ActiveRecord::Relation::FromClause.new(subselect, table_name_literal)
+        elsif !Thread.current[:no_deleted_at_from] && build_deleted_at_from?
+          Thread.currently(:no_deleted_at_from, true) do
+            return ::ActiveRecord::Relation::FromClause.new(deleted_at_select, table_name_literal)
+          end
+        else
+          super_from
         end
-      end
-
-      def build_from?
-        from_clause.empty?
       end
     end
 

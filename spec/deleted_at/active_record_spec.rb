@@ -15,6 +15,25 @@ describe DeletedAt::ActiveRecord do
     SQL
   end
 
+  it 'should allow for deep nesting with deleted_at sub-select as most inner query' do
+    inner_query = User.all.from(User.where(name: 'bob').from(Admin.where(name: 'john'), 'johns').as('johns')).as('bobs')
+    sql = User.select(inner_query[:name]).from(inner_query).to_sql
+
+    expect(sql).to eql(<<~SQL.squish)
+      SELECT bobs."name"
+        FROM (SELECT "users".*
+          FROM (SELECT "users".*
+            FROM (SELECT "users"."id", "users"."kind"
+              FROM (SELECT "users".* FROM "users" WHERE "users"."deleted_at" IS NULL)
+                "users"
+              WHERE "users"."kind" = 1 AND "users"."name" = 'john')
+              johns
+            WHERE "users"."name" = 'bob')
+          johns)
+        bobs
+    SQL
+  end
+
   it 'should let other missing consts through' do
     binding.pry
     User.all.as('foo')
