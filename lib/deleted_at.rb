@@ -1,5 +1,7 @@
 require 'deleted_at/version'
 require 'deleted_at/railtie' if defined?(Rails::Railtie)
+require 'deleted_at/core_ext/thread'
+require 'deleted_at/core_ext/kernel'
 
 module DeletedAt
 

@@ -15,4 +15,19 @@ describe DeletedAt::ActiveRecord do
     SQL
   end
 
+  it 'should let other missing consts through' do
+    binding.pry
+    User.all.as('foo')
+    sql = User.from(User.where(name: 'foo'), 'users').to_sql
+
+    expect(sql).to match(Regexp.new <<~SQL.squish
+      SELECT .* FROM
+        (SELECT .* FROM
+          (SELECT .* FROM "comments"
+            WHERE "comments"."deleted_at" IS NULL)
+          WHERE "comments"."title" = 'foo') comments
+      SQL
+    )
+  end
+
 end
