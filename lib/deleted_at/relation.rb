@@ -4,6 +4,7 @@ module DeletedAt
     def self.prepended(subclass)
       subclass.class_eval do
         attr_writer :deleted_at_scope
+        attr_reader :table_alias_name
       end
     end
 
@@ -27,10 +28,20 @@ module DeletedAt
       end.freeze
     end
 
+    def as(other)
+      @table_alias_name = Arel::Nodes::SqlLiteral.new(other)
+      super
+    end
+
+    def table_name_literal
+      table_alias_name || ::ActiveRecord::Base.connection.quote_table_name(table_name)
+    end
+
     # Rails 4.x
     def from_value
+      @table_alias_name ||= super&.first&.name
       if (subselect = deleted_at_select)
-        [subselect, ::ActiveRecord::Base.connection.quote_table_name(table_name)]
+        [subselect, table_name_literal]
       else
         super
       end
@@ -38,10 +49,12 @@ module DeletedAt
 
     # Rails 5.x
     def from_clause
+      super_from_clause = super
+      @table_alias_name ||= super_from_clause&.name || super_from_clause&.value&.right
       if (subselect = deleted_at_select)
-        ::ActiveRecord::Relation::FromClause.new(subselect, ::ActiveRecord::Base.connection.quote_table_name(table_name))
+        ::ActiveRecord::Relation::FromClause.new(subselect, table_name_literal)
       else
-        super
+        super_from_clause
       end
     end
 
