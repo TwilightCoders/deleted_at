@@ -43,17 +43,21 @@ describe DeletedAt::Core do
   end
 
   context 'with default_scope' do
-    it 'should have the default scope in the subquery' do
+    it 'does not trample other default_scopes' do
       Admin.create(name: 'bob', kind: 1)
       Admin.create(name: 'john', kind: 1)
       Admin.create(name: 'sally', kind: 0)
-
       Admin.first.destroy
 
-      User.first
-
-      # SELECT "users".* FROM (SELECT "users".* FROM "users" WHERE "users"."kind" = $1 AND "users"."deleted_at" IS NULL) "users" WHERE "users"."kind" = 1
-      expect(Admin::Deleted.first.class).to eq(Admin)
+      sql = Admin::Deleted.where(name: 'john').to_sql
+      expect(sql).to eq(<<~SQL.squish)
+        SELECT "users"."id",
+               "users"."kind"
+        FROM "users"
+        WHERE "users"."kind" = 1
+          AND "users"."name" = 'john'
+          AND ("users"."deleted_at" IS NOT NULL)
+        SQL
     end
   end
 

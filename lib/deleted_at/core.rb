@@ -34,6 +34,7 @@ module DeletedAt
 
         self.prepend(DeletedAt::ActiveRecord)
 
+        # default_scope { all.only_present }
       end
 
       def deleted_at_attributes

@@ -4,68 +4,54 @@ module DeletedAt
     def self.prepended(subclass)
       subclass.class_eval do
         attr_writer :deleted_at_scope
-        attr_reader :subquery_name
-        attr_reader :selecting_from_deleted_at
+
+        private
+
+        def deleted_at_scope
+          @deleted_at_scope
+        end
       end
     end
 
-    def deleted_at_scope
-      @deleted_at_scope ||= :Present
+    def unscope_deleted_at!(table = arel_table)
+      # binding.pry
+      unscope!(where: [deleted_at[:column], table[deleted_at[:column]], arel_table[deleted_at[:column]]])
     end
 
-    def deleted_at_select
-      scoped_arel = case deleted_at_scope
+    def with_deleted
+      # binding.pry
+      unscope_deleted_at!
+    end
+
+    def only_deleted(table = arel_table)
+      unscope_deleted_at!
+      where!(table[deleted_at[:column]].not_eq(nil))
+      # unscope_deleted_at.where!(::ActiveRecord::QueryMethods::WhereChain.new(self).not(deleted_at[:column] => nil))
+    end
+
+    def only_present(table = arel_table)
+      unscope_deleted_at!
+      where!(table[deleted_at[:column]].eq(nil))
+      # unscope_deleted_at.where!(deleted_at[:column] => nil)
+    end
+
+    def build_deleted_at_where(table = arel_table)
+        # binding.pry
+      case deleted_at_scope
+      when :All
+        unscope_deleted_at!(table)
       when :Deleted
-        vanilla.dup.where(table[klass.deleted_at[:column]].not_eq(nil))
-      when :Present
-        vanilla.dup.where(table[klass.deleted_at[:column]].eq(nil))
-      else
-        nil
+        only_deleted(table)
+      when :Present, nil
+        only_present(table)
+        # unscope_deleted_at.where(deleted_at[:column] => nil)
       end
     end
 
-    def build_deleted_at_from?
-      [:Deleted, :Present].include?(deleted_at_scope)
-    end
-
-    def deleted_at_from
-      deleted_at_select&.as(table_name_literal)
-    end
-
-    def vanilla
-      @vanilla ||= klass.unscoped.tap do |rel|
-        rel.deleted_at_scope = :All
-      end.freeze
-    end
-
-    def set_subquery_name(value, subquery_name = nil)
-      @subquery_name ||= subquery_name || if Arel::Nodes::SqlLiteral == value&.right
-        value.right
-      end
-    end
-
-    def table_name_literal
-      subquery_name || ::ActiveRecord::Base.connection.quote_table_name(table_name)
-    end
-
-    if Rails.gem_version < Gem::Version.new('5.0')
-      def from_value
-        super || if (subselect = deleted_at_select)
-          [subselect, table_name_literal]
-        end
-      end
-    else
-      def from_clause
-        if !(super_from = super)&.empty?
-          super_from
-        elsif !Thread.current[:no_deleted_at_from] && build_deleted_at_from?
-          Thread.currently(:no_deleted_at_from, true) do
-            return ::ActiveRecord::Relation::FromClause.new(deleted_at_select, table_name_literal)
-          end
-        else
-          super_from
-        end
-      end
+    def build_arel
+      ta = (from_value && build_from) || arel_table
+      build_deleted_at_where(ta)
+      super
     end
 
     def delete_all(*args)

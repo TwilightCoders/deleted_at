@@ -40,10 +40,14 @@ module DeletedAt
 
       def const_missing(const)
         case const
-        when :All, :Deleted
-          all.tap do |_query|
-            _query.deleted_at_scope = const
+        when :All, :Deleted, :Present
+          all.tap do |rel|
+            rel.deleted_at_scope = const
           end
+        # when :All
+        #   current_scope = all.with_deleted
+        # when :Deleted
+        #   current_scope = all.only_deleted
         else super
         end
       end
