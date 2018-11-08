@@ -52,7 +52,8 @@ describe DeletedAt::Core do
       sql = Admin::Deleted.where(name: 'john').to_sql
       expect(sql).to eq(<<~SQL.squish)
         SELECT "users"."id",
-               "users"."kind"
+               "users"."kind",
+               "users"."deleted_at"
         FROM "users"
         WHERE "users"."kind" = 1
           AND "users"."name" = 'john'

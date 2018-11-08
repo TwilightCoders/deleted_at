@@ -11,7 +11,22 @@ describe DeletedAt::ActiveRecord do
     sql = User.select(inner_query[:name]).from(inner_query).to_sql
 
     expect(sql).to match(Regexp.new(<<~SQL.squish))
-      SELECT bobs\\."name"
+      SELECT bobs\\."name", bobs\\."deleted_at"
+        FROM \\(SELECT "users".*
+          FROM "users" .*
+            AND "users"\\."deleted_at" IS NULL\\) bobs
+          WHERE bobs\\."deleted_at" IS NULL
+    SQL
+  end
+
+  it 'ensure projection is present' do
+    inner_query = User.select(:name).where(name: 'bob').as('bobs')
+    results = User.select(inner_query[:name]).from(inner_query)
+    results.to_a
+    sql = results.to_sql
+
+    expect(sql).to match(Regexp.new(<<~SQL.squish))
+      SELECT bobs\\."name", bobs\\."deleted_at"
         FROM \\(SELECT "users".*
           FROM "users" .*
             AND "users"\\."deleted_at" IS NULL\\) bobs
@@ -24,13 +39,13 @@ describe DeletedAt::ActiveRecord do
     sql = User.select(inner_query[:name]).from(inner_query).to_sql
 
     sql_regex = Regexp.new(<<~SQL.squish)
-      SELECT bobs."name"
+      SELECT bobs."name", bobs."deleted_at"
       FROM
         \\(SELECT "users".*
          FROM
            \\(SELECT "users".*
             FROM
-              \\(SELECT "users"."id", "users"."kind" .*
+              \\(SELECT .*
                  AND "users"."deleted_at" IS NULL\\) johns .*
               AND johns."deleted_at" IS NULL\\) johns
          WHERE johns."deleted_at" IS NULL\\) bobs
