@@ -50,15 +50,12 @@ describe DeletedAt::Core do
       Admin.first.destroy
 
       sql = Admin::Deleted.where(name: 'john').to_sql
+
       expect(sql).to eq(<<~SQL.squish)
-        SELECT "users"."id",
-               "users"."kind",
-               "users"."deleted_at"
-        FROM "users"
-        WHERE "users"."kind" = 1
-          AND "users"."name" = 'john'
-          AND ("users"."deleted_at" IS NOT NULL)
-        SQL
+        WITH "users" AS
+          (SELECT "users"."id", "users"."kind" FROM "users" WHERE "users"."deleted_at" IS NOT NULL)
+        SELECT "users"."id", "users"."kind" FROM "users" WHERE "users"."kind" = 1 AND "users"."name" = 'john'
+      SQL
     end
   end
 

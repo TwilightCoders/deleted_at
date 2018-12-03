@@ -13,78 +13,72 @@ module DeletedAt
       end
     end
 
-    def unscope_deleted_at!(table = arel_table)
-      cols = deleted_at_columns
-      self.select_values -= cols
-      unscope!(where: cols)
-    end
-
-    def deleted_at_columns(table = arel_table)
-      [deleted_at[:column], table[deleted_at[:column]], arel_table[deleted_at[:column]]].uniq
-    end
-
-    def with_deleted
-      unscope_deleted_at!
-    end
-
-    def only_deleted!(table = arel_table)
-      unscope_deleted_at!(table)
-      where!(table[deleted_at[:column]].not_eq(nil))
-      # unscope_deleted_at.where!(::ActiveRecord::QueryMethods::WhereChain.new(self).not(deleted_at[:column] => nil))
-    end
-
-    def only_present!(table = arel_table)
-      unscope_deleted_at!(table)
-      where!(table[deleted_at[:column]].eq(nil))
-      # unscope_deleted_at.where!(deleted_at[:column] => nil)
-    rescue TypeError => e
-      puts "Foo"
-    end
-
-    def build_deleted_at_where!(table = arel_table)
-        # binding.pry
-      case deleted_at_scope
-      when :All
-        unscope_deleted_at!(table)
-      when :Deleted
-        only_deleted!(table)
-      when :Present, nil
-        only_present!(table)
-        # unscope_deleted_at.where(deleted_at[:column] => nil)
+    def build_arel
+      if cte = deleted_at_subquery
+        super.with(cte)
+      else
+        super
       end
     end
 
-    def as(other)
-      ensure_deleted_at_column_selected!
-      super
+    def from!(value, subquery_name = nil) # :nodoc:
+      lift_withs(value) do
+        super
+      end
     end
 
-    def from(value, subquery_name = nil)
-      value.ensure_deleted_at_column_selected! if value.class < ::ActiveRecord::Relation
-      super
+    def merge!(other) # :nodoc:
+      lift_withs(other) do
+        super
+      end
     end
 
-    def calculate(*args)
-      @calculating = true
-      super
+    def lift_withs(query)
+      if (select_with = find_with(query)) && (withs = deleted_at_withs(select_with.with))
+        remove_withs(select_with, *withs)
+        yield.with(withs) if block_given?
+      else
+        yield if block_given?
+      end
     end
 
-    def ensure_deleted_at_column_selected!(table = arel_table)
-      self.select_values -= deleted_at_columns
-      _select!(table[deleted_at[:column]]) if select_values.any? && !@calculating
+    def deleted_at_withs(with)
+      [klass.with_deleted, klass.with_present] & (with&.expr || [])
     end
 
-    def ensure_deleted_at_column_grouped!(table = arel_table)
-      self.group_values -= deleted_at_columns
-      group!(table[deleted_at[:column]]) if group_values.any? && !@calculating
+    def remove_withs(select, *withs)
+      puts "Removing #{withs.count}"
+      select.with = (select.with.expr -= withs).any? ? select.with : nil
     end
 
-    def build_arel
-      ta = (from_value && build_from) || arel_table
-      build_deleted_at_where!(ta)
-      ensure_deleted_at_column_selected!(ta)
-      ensure_deleted_at_column_grouped!(ta)
-      super
+    def find_with(obj)
+      case obj
+      when Arel::Nodes::TableAlias
+        find_with(obj.left)
+      when Arel::Nodes::Grouping
+        find_with(obj.expr)
+      when Arel::Nodes::SelectStatement
+        find_with(obj.cores) or (obj.with and obj)
+      when Arel::SelectManager
+        find_with(obj.ast)
+      when Arel::Nodes::SelectCore
+        find_with(obj.source)
+      when Arel::Nodes::As
+        find_with(obj.right)
+      when Array
+        obj.find { |a| find_with(a) }
+      else
+        nil
+      end
+    end
+
+    def deleted_at_subquery
+      case deleted_at_scope
+      when :Deleted
+        klass.with_deleted
+      when :Present, nil
+        klass.with_present
+      end
     end
 
     def delete_all(*args)
