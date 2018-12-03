@@ -14,22 +14,10 @@ module DeletedAt
       @destroyed = !deleted_at.nil?
     end
 
-    def destroy
-      soft_delete
-      super
-    end
 
-    def delete
-      soft_delete
-      super
-    end
 
     private
 
-    def soft_delete
-      update_columns(self.class.deleted_at_attributes)
-      @destroyed = true
-    end
 
     module ClassMethods
 
