@@ -31,9 +31,28 @@ describe DeletedAt::ActiveRecord do
     SQL
   end
 
+  it 'does arel properly' do
+    inner_query = User.from(User.where(name: 'bob').merge(Admin.where(name: 'john')), 'users').as('admin_users');
+    sql1 = User.select(inner_query[:name]).from(inner_query).to_sql
+    sql2 = User.select(inner_query[:name]).from(inner_query, 'admin_users').to_sql
+    binding.pry
+    expect(sql1).to eq(sql2)
+  end
+
   it 'should allow for deep nesting with deleted_at scope being maintained' do
-    inner_query = User.all.from(User.where(name: 'bob').from(Admin.where(name: 'john'), 'johns').as('johns')).as('bobs')
-    sql = User.select(inner_query[:name]).from(inner_query).to_sql
+    # inner_query = User.all.from(User.where(name: 'bob').from(Admin.where(name: 'john').arel, 'johns').arel.as('johns')).as('bobs')
+    binding.pry
+    User.where(name: 'bob').as('foo')
+    # So, here's the deal. Rails (ActiveRecord, or Arel more specifically) in it's infinite wisdom,
+    # doesn't think to use the table name
+    Admin.connection.unprepared_statement do
+      inner_query = User.from(User.where(name: 'bob').merge(Admin.where(name: 'john')), 'users')
+      inner = inner_query.as('admin_users')
+    binding.pry
+      sql = User.select(inner[:name]).from(inner).to_sql
+    end
+
+    binding.pry
 
     sql_regex = Regexp.new(<<~SQL.squish)
       WITH "users" AS \\(SELECT "users".\\* FROM "users" WHERE "users"."deleted_at" IS NULL\\)
@@ -42,8 +61,8 @@ describe DeletedAt::ActiveRecord do
         \\(SELECT "users".* FROM
           \\(WITH "users" AS
             \\(SELECT "users"."id", "users"."kind" FROM "users" WHERE "users"."deleted_at" IS NULL\\)
-              SELECT "users"."id", "users"."kind" FROM "users" WHERE "users"."kind" = \\$1 AND "users"."name" = \\$2\\) johns
-                WHERE "users"."name" = \\$3\\) johns\\) bobs
+              SELECT "users"."id", "users"."kind" FROM "users" WHERE "users"."kind" = 1 AND "users"."name" = 'bob') johns
+                WHERE "users"."name" = 'john') bobs_not_johns\\) bobs
     SQL
 
     expect(sql).to match(sql_regex)

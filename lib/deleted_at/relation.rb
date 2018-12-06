@@ -5,33 +5,91 @@ module DeletedAt
       subclass.class_eval do
         attr_writer :deleted_at_scope
 
+        def deleted_at_tables
+          @deleted_at_tables ||= Set.new
+        end
+
         private
 
         def deleted_at_scope
           @deleted_at_scope
         end
+
       end
+
     end
 
-    def build_arel
-      if cte = deleted_at_subquery
-        super.with(cte)
-      else
-        super
-      end
+    def build_arel(*args)
+      # binding.pry
+      super
     end
 
-    def from!(value, subquery_name = nil) # :nodoc:
-      lift_withs(value) do
-        super
-      end
-    end
+    # def from(val, name = nil)
+    #   # binding.pry
+    #   case val
+    #   when Arel::Nodes::TableAlias
+    #     val, name = val.left, name || val.right
+    #   end
+    #   super
+    # end
 
-    def merge!(other) # :nodoc:
-      lift_withs(other) do
-        super
-      end
-    end
+    # def build_arel
+    #   Thread.currently(:first_time, Thread.current[:first_time].nil?) do
+    #     super.tap do |ar|
+    #       if Thread.current[:first_time]
+    #         deleted_at_tables.each do |table|
+    #           if table.engine.deleted_at? && table.engine.deleted_scope
+    #             ar.with(table.engine.deleted_scope)
+    #           end
+    #         end
+    #       end
+    #     end
+    #   end
+
+    #   # Thread.currently(:first_time, Thread.current[:first_time].nil?) do
+    #   #   Thread.currently(:do_not_with, true) do
+    #   #     super.tap do |ar|
+    #   #       if !Thread.current[:do_not_with] || Thread.current[:first_time]
+    #   #         case klass.deleted_at_type
+    #   #         when :all
+    #   #           # noop
+    #   #         when :deleted
+    #   #           ar.with(klass.with_deleted)
+    #   #         else
+    #   #           ar.with(klass.with_present)
+    #   #         end
+    #   #       end
+    #   #     end
+    #   #   end
+    #   # end
+    # end
+
+    # def from!(value, subquery_name = nil) # :nodoc:
+    #   case value
+    #   when ::ActiveRecord::Relation
+    #     deleted_at_tables + value.deleted_at_tables
+    #     bind_values += value.bind_values if bind_values
+    #   else
+    #     find_tables(value, deleted_at_tables)
+    #   end
+
+    #   lift_withs(value) do
+    #     super
+    #   end
+    # end
+
+    # def merge!(other) # :nodoc:
+    #   case other
+    #   when ::ActiveRecord::Relation
+    #     deleted_at_tables + other.deleted_at_tables
+    #   else
+    #     find_tables(other, deleted_at_tables)
+    #   end
+
+    #   lift_withs(other) do
+    #     super
+    #   end
+    # end
 
     def lift_withs(query)
       if (select_with = find_with(query)) && (withs = deleted_at_withs(select_with.with))
@@ -72,13 +130,30 @@ module DeletedAt
       end
     end
 
-    def deleted_at_subquery
-      case deleted_at_scope
-      when :Deleted
-        klass.with_deleted
-      when :Present, nil
-        klass.with_present
+    def find_tables(ast, collector = Set.new)
+      case ast
+      when Arel::Table
+        collector << ast
+      when Arel::Nodes::TableAlias
+        find_tables(ast.left, collector)
+      when Arel::Nodes::Grouping
+        find_tables(ast.expr, collector)
+      when Arel::Nodes::SelectStatement
+        find_tables(ast.cores, collector) # or (ast.with and ast)
+      when Arel::SelectManager
+        find_tables(ast.ast, collector)
+      when Arel::Attributes::Attribute
+        find_tables(ast.relation, collector)
+      when Arel::Nodes::SelectCore
+        find_tables(ast.source, collector)
+        find_tables(ast.projections, collector)
+        find_tables(ast.wheres, collector)
+      when Arel::Nodes::As
+        find_tables(ast.right, collector)
+      when Array
+        ast.inject(collector) { |sum, a| sum += find_tables(a, sum) }
       end
+      collector
     end
 
     def delete_all(*args)

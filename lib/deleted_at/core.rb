@@ -49,6 +49,24 @@ module DeletedAt
 
         self.prepend(DeletedAt::ActiveRecord)
 
+        # self.const_set(:All, DeletedAt::Core.create_class(self, :all) do |klass|
+        #   klass.table_name += "_all"
+        #   class << klass
+        #     alias_method :deleted_scope, :with_all
+        #   end
+        # end)
+        # self.const_set(:Deleted, DeletedAt::Core.create_class(self, :deleted) do |klass|
+        #   class << klass
+        #     alias_method :deleted_scope, :with_deleted
+        #   end
+        # end)
+
+        # class << self
+        #   alias_method :deleted_scope, :with_present
+        # end
+
+        # self.const_set(:Present, self)
+
         # default_scope { all.only_present }
       # Rescue so that we don't stop migrations from running.
       rescue ::ActiveRecord::StatementInvalid => e

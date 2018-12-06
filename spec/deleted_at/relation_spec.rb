@@ -65,6 +65,7 @@ describe DeletedAt::Core do
 
         User.where(name: 'bob').destroy_all
 
+
         expect(User.count).to eq(2)
         expect(User::All.count).to eq(3)
         expect(User::Deleted.count).to eq(1)

@@ -2,3 +2,4 @@ test:
   adapter: postgresql
   encoding: unicode
   database: deleted_at-test
+  prepared_statements: false
