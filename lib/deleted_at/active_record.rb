@@ -14,10 +14,7 @@ module DeletedAt
       @destroyed = !deleted_at.nil?
     end
 
-
-
     private
-
 
     module ClassMethods
 
@@ -26,18 +23,23 @@ module DeletedAt
         subclass.init_deleted_at_relations
       end
 
-      def const_missing(const)
-        case const
-        when :All, :Deleted, :Present
-          all.tap do |rel|
-            rel.deleted_at_scope = const
-          end
-        # when :All
-        #   current_scope = all.with_deleted
-        # when :Deleted
-        #   current_scope = all.only_deleted
-        else super
-        end
+      def deleted_at?
+        true
+      end
+
+      def with_deleted
+        # binding.pry
+        # const_get(:All).where(arel_table[:deleted_at].not_eq(nil))#.as('foo').to_sql
+        # Arel::Nodes::As.new(Arel::Table.new(table_name), const_get(:All).where(arel_table[:deleted_at].not_eq(nil)))
+        @with_deleted ||= Arel::Nodes::As.new(Arel::Table.new(table_name), arel_table.project(vanilla_deleted_at_projections).where(arel_table[:deleted_at].not_eq(nil))).freeze
+      end
+
+      def with_all
+        @with_all ||= Arel::Nodes::As.new(Arel::Table.new(table_name), arel_table.project(vanilla_deleted_at_projections)).freeze
+      end
+
+      def with_present
+        @with_present ||= Arel::Nodes::As.new(Arel::Table.new(table_name), arel_table.project(vanilla_deleted_at_projections).where(arel_table[:deleted_at].eq(nil))).freeze
       end
 
     end

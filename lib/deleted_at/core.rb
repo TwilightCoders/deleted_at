@@ -8,6 +8,8 @@ module DeletedAt
       class << subclass
         cattr_accessor :deleted_at
         self.deleted_at = {}
+        attr_accessor :deleted_at_type, :vanilla_deleted_at_projections
+        @deleted_at_type = :present
       end
 
       subclass.extend(ClassMethods)
@@ -22,6 +24,16 @@ module DeletedAt
       klass.columns.map(&:name).include?(klass.deleted_at_column.to_s)
     end
 
+    def self.create_class(klass, type)
+      Class.new(klass) do |new_klass|
+        @deleted_at_type = type
+        def self.discriminate_class_for_record(record)
+          superclass
+        end
+        yield(new_klass) if block_given?
+      end
+    end
+
     module ClassMethods
 
       def with_deleted_at(options={}, &block)
@@ -32,6 +44,8 @@ module DeletedAt
         return if ::DeletedAt.disabled? || !connected?
 
         DeletedAt::Core.raise_missing(self) unless Core.has_deleted_at_column?(self)
+
+        @vanilla_deleted_at_projections = all.projections
 
         self.prepend(DeletedAt::ActiveRecord)
 
@@ -48,18 +62,6 @@ module DeletedAt
 
       def deleted_at_column
         deleted_at.dig(:column)
-      end
-
-      def with_deleted
-        @with_deleted ||= Arel::Nodes::As.new(Arel::Table.new(table_name), arel_table.project(vanilla_deleted_at_projections).where(arel_table[:deleted_at].not_eq(nil))).freeze
-      end
-
-      def with_present
-        @with_present ||= Arel::Nodes::As.new(Arel::Table.new(table_name), arel_table.project(vanilla_deleted_at_projections).where(arel_table[:deleted_at].eq(nil))).freeze
-      end
-
-      def vanilla_deleted_at_projections
-        const_get(:All).projections
       end
 
       def init_deleted_at_relations
