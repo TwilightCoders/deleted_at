@@ -28,18 +28,15 @@ module DeletedAt
       end
 
       def with_deleted
-        # binding.pry
-        # const_get(:All).where(arel_table[:deleted_at].not_eq(nil))#.as('foo').to_sql
-        # Arel::Nodes::As.new(Arel::Table.new(table_name), const_get(:All).where(arel_table[:deleted_at].not_eq(nil)))
-        @with_deleted ||= Arel::Nodes::As.new(Arel::Table.new(table_name), arel_table.project(vanilla_deleted_at_projections).where(arel_table[:deleted_at].not_eq(nil))).freeze
+        @with_deleted ||= Arel::Nodes::As.new(arel_table, User::All.where(User::All.arel_table[:deleted_at].not_eq(nil)).arel).freeze
       end
 
       def with_all
-        @with_all ||= Arel::Nodes::As.new(Arel::Table.new(table_name), arel_table.project(vanilla_deleted_at_projections)).freeze
+        nil
       end
 
       def with_present
-        @with_present ||= Arel::Nodes::As.new(Arel::Table.new(table_name), arel_table.project(vanilla_deleted_at_projections).where(arel_table[:deleted_at].eq(nil))).freeze
+        @with_present ||= Arel::Nodes::As.new(arel_table, User::All.where(User::All.arel_table[:deleted_at].eq(nil)).arel).freeze
       end
 
     end

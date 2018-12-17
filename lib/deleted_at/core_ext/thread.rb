@@ -1,9 +1,13 @@
 class Thread
   def self.currently(key, value)
     orignal_value, current[key] = current[key], value
-    yield(current[key]) if block_given?
+    yield(orignal_value, current[key]) if block_given?
   ensure
     current[key] = orignal_value
+  end
+
+  def self.currently?(key, value = true)
+    current[key] == value
   end
 end
 

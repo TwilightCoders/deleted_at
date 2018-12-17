@@ -24,12 +24,15 @@ module DeletedAt
       klass.columns.map(&:name).include?(klass.deleted_at_column.to_s)
     end
 
-    def self.create_class(klass, type)
+    def self.create_class(klass, type, table_suffix = '')
       Class.new(klass) do |new_klass|
         @deleted_at_type = type
+        @deleted_at_table_suffix = table_suffix
+
         def self.discriminate_class_for_record(record)
           superclass
         end
+
         yield(new_klass) if block_given?
       end
     end
@@ -40,7 +43,6 @@ module DeletedAt
         self.deleted_at = DeletedAt::DEFAULT_OPTIONS.merge(options)
         self.deleted_at[:proc] = block if block_given?
 
-        # binding.pry
         return if ::DeletedAt.disabled? || !connected?
 
         DeletedAt::Core.raise_missing(self) unless Core.has_deleted_at_column?(self)
@@ -49,24 +51,54 @@ module DeletedAt
 
         self.prepend(DeletedAt::ActiveRecord)
 
-        # self.const_set(:All, DeletedAt::Core.create_class(self, :all) do |klass|
-        #   klass.table_name += "_all"
-        #   class << klass
-        #     alias_method :deleted_scope, :with_all
-        #   end
-        # end)
-        # self.const_set(:Deleted, DeletedAt::Core.create_class(self, :deleted) do |klass|
-        #   class << klass
-        #     alias_method :deleted_scope, :with_deleted
-        #   end
-        # end)
+        def self.const_missing(const)
+          case const
+          when :All
+            relation.tap do |re|
+              re.arel_table = Arel::Table.new(table_name + "/all", self)
+            end
+          when :Deleted
+            relation.tap do |re|
+              re.arel_table = Arel::Table.new(table_name + "/deleted", self)
+            end
+          end
+        end
 
-        # class << self
-        #   alias_method :deleted_scope, :with_present
-        # end
+        # TODO Move to ActiveRecord
+        def deleted_at_table_name
+          @deleted_at_table_name ||= Thread.currently(:selecting_deleted_at, false) do
+            table_name + (@deleted_at_table_suffix || '')
+          end
+        end
 
-        # self.const_set(:Present, self)
+        def table_name
+          if Thread.currently?(:selecting_deleted_at, true)
+            binding.pry
+            deleted_at_table_name
+          else
+            super
+          end
+        end
 
+        self.const_set(:All, DeletedAt::Core.create_class(self, :all, '_all') do |klass|
+          class << klass
+            alias_method :deleted_scope, :with_all
+          end
+        end)
+
+        self.const_set(:Deleted, DeletedAt::Core.create_class(self, :deleted, '_deleted') do |klass|
+          class << klass
+            alias_method :deleted_scope, :with_deleted
+          end
+        end)
+
+        class << self
+          alias_method :deleted_scope, :with_present
+        end
+
+        self.const_set(:Present, self)
+
+        @arel_table = nil
         # default_scope { all.only_present }
       # Rescue so that we don't stop migrations from running.
       rescue ::ActiveRecord::StatementInvalid => e

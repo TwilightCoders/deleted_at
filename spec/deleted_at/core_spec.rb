@@ -44,6 +44,7 @@ describe DeletedAt::Core do
 
   context 'with default_scope' do
     it 'does not trample other default_scopes' do
+      binding.pry
       Admin.create(name: 'bob', kind: 1)
       Admin.create(name: 'john', kind: 1)
       Admin.create(name: 'sally', kind: 0)

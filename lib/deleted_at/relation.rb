@@ -4,9 +4,14 @@ module DeletedAt
     def self.prepended(subclass)
       subclass.class_eval do
         attr_writer :deleted_at_scope
+        attr_writer :deleted_at_table_name
 
         def deleted_at_tables
           @deleted_at_tables ||= Set.new
+        end
+
+        def deleted_at_table_name
+          @deleted_at_table_name ||= ""
         end
 
         private
@@ -19,9 +24,69 @@ module DeletedAt
 
     end
 
+    def exec_queries
+      Thread.currently(:foobar, true) do
+        super
+      end
+      # @records = eager_loading? ? find_with_associations : @klass.find_by_sql(arel, arel.bind_values + bind_values)
+
+      # preload = preload_values
+      # preload +=  includes_values unless eager_loading?
+      # preloader = build_preloader
+      # preload.each do |associations|
+      #   preloader.preload @records, associations
+      # end
+
+      # @records.each { |record| record.readonly! } if readonly_value
+
+      # @loaded = true
+      # @records
+    end
+
     def build_arel(*args)
-      # binding.pry
       super
+      # Thread.currently(:foobar, false) do |foobar_orig, foobar_curr|
+      #   deleted_at_table_name = select_table_name
+      #   # if foobar_orig
+      #   #   def table
+      #   #     super.tap do |t|
+      #   #       t.name = select_table_name
+      #   #     end
+      #   #   end
+      #   # end
+
+      #   super.tap do |ar|
+      #     lift_withs(ar) do
+      #       ar
+      #     end
+      #   end
+      #   # ar.engine.table_name = select_table_name
+      #   # if klass.deleted_scope
+      #   #   puts "Adding #{klass.name} With:"
+      #   #   puts klass.deleted_scope.to_sql
+      #   #   ar.with(klass.deleted_scope)
+      #   # end
+      # end
+    end
+
+    def engage_deleted_at
+      # binding.pry
+      # @table = Arel::Table.new(klass.deleted_at_table_name, klass)
+      Thread.currently(:selecting_deleted_at, true) do
+        yield
+      end
+    end
+
+    def exec_queries(*args)
+      engage_deleted_at do
+        super
+      end
+    end
+
+    def to_sql(*args)
+      engage_deleted_at do
+        super
+      end
     end
 
     # def from(val, name = nil)
@@ -33,63 +98,33 @@ module DeletedAt
     #   super
     # end
 
-    # def build_arel
-    #   Thread.currently(:first_time, Thread.current[:first_time].nil?) do
-    #     super.tap do |ar|
-    #       if Thread.current[:first_time]
-    #         deleted_at_tables.each do |table|
-    #           if table.engine.deleted_at? && table.engine.deleted_scope
-    #             ar.with(table.engine.deleted_scope)
-    #           end
-    #         end
-    #       end
-    #     end
-    #   end
+    def from!(value, subquery_name = nil) # :nodoc:
+      super.tap do |ar|
+        lift_withs(value) do
+          ar
+        end
+      end
+    end
 
-    #   # Thread.currently(:first_time, Thread.current[:first_time].nil?) do
-    #   #   Thread.currently(:do_not_with, true) do
-    #   #     super.tap do |ar|
-    #   #       if !Thread.current[:do_not_with] || Thread.current[:first_time]
-    #   #         case klass.deleted_at_type
-    #   #         when :all
-    #   #           # noop
-    #   #         when :deleted
-    #   #           ar.with(klass.with_deleted)
-    #   #         else
-    #   #           ar.with(klass.with_present)
-    #   #         end
-    #   #       end
-    #   #     end
-    #   #   end
-    #   # end
-    # end
+    def merge!(other) # :nodoc:
+      # binding.pry
+      # lift_withs(other) do
+      #   binding.pry
+      #   super
+      # end
+      # binding.pry
+      super.tap do |ar|
+        # binding.pry
+        lift_withs(other) do
+          ar
+        end
+      end
 
-    # def from!(value, subquery_name = nil) # :nodoc:
-    #   case value
-    #   when ::ActiveRecord::Relation
-    #     deleted_at_tables + value.deleted_at_tables
-    #     bind_values += value.bind_values if bind_values
-    #   else
-    #     find_tables(value, deleted_at_tables)
-    #   end
-
-    #   lift_withs(value) do
-    #     super
-    #   end
-    # end
-
-    # def merge!(other) # :nodoc:
-    #   case other
-    #   when ::ActiveRecord::Relation
-    #     deleted_at_tables + other.deleted_at_tables
-    #   else
-    #     find_tables(other, deleted_at_tables)
-    #   end
-
-    #   lift_withs(other) do
-    #     super
-    #   end
-    # end
+      # lift_withs(other) do
+      #   self
+      # end
+      # super
+    end
 
     def lift_withs(query)
       if (select_with = find_with(query)) && (withs = deleted_at_withs(select_with.with))
@@ -111,6 +146,8 @@ module DeletedAt
 
     def find_with(obj)
       case obj
+      when ::ActiveRecord::Relation
+        find_with(obj.ast)
       when Arel::Nodes::TableAlias
         find_with(obj.left)
       when Arel::Nodes::Grouping

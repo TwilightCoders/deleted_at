@@ -31,28 +31,30 @@ describe DeletedAt::ActiveRecord do
     SQL
   end
 
+  it 'does not affect insert and deletion' do
+    expect{ User.create(name: 'bobby') }.to_not raise_error
+  end
+
   it 'does arel properly' do
-    inner_query = User.from(User.where(name: 'bob').merge(Admin.where(name: 'john')), 'users').as('admin_users');
-    sql1 = User.select(inner_query[:name]).from(inner_query).to_sql
+    inner_query = User::All.where(name: 'bob').merge(Admin.where(name: 'john'))
+    # Admin.where(name: 'john').to_sql
+    # User::All.where(name: 'bob').merge(Admin.where(name: 'john')).to_sql
+
+    sql1 = User.select(inner_query[:name]).from(inner_query.arel).to_sql
     sql2 = User.select(inner_query[:name]).from(inner_query, 'admin_users').to_sql
-    binding.pry
     expect(sql1).to eq(sql2)
   end
 
   it 'should allow for deep nesting with deleted_at scope being maintained' do
     # inner_query = User.all.from(User.where(name: 'bob').from(Admin.where(name: 'john').arel, 'johns').arel.as('johns')).as('bobs')
-    binding.pry
     User.where(name: 'bob').as('foo')
     # So, here's the deal. Rails (ActiveRecord, or Arel more specifically) in it's infinite wisdom,
     # doesn't think to use the table name
     Admin.connection.unprepared_statement do
       inner_query = User.from(User.where(name: 'bob').merge(Admin.where(name: 'john')), 'users')
       inner = inner_query.as('admin_users')
-    binding.pry
       sql = User.select(inner[:name]).from(inner).to_sql
     end
-
-    binding.pry
 
     sql_regex = Regexp.new(<<~SQL.squish)
       WITH "users" AS \\(SELECT "users".\\* FROM "users" WHERE "users"."deleted_at" IS NULL\\)
