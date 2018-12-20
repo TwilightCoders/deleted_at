@@ -1,8 +1,22 @@
 require 'deleted_at/active_record'
+require 'deleted_at/table'
 
 module DeletedAt
 
+  def self.table_spoofing(value=true)
+    Thread.currently(:table_spoofing, value) do
+      yield
+    end
+  end
+
+  def self.table_spoofing?(value=true)
+    Thread.current[:table_spoofing] == value
+  end
+
   module Core
+
+    cattr_accessor :registry
+    self.registry = {}
 
     def self.prepended(subclass)
       class << subclass
@@ -24,19 +38,6 @@ module DeletedAt
       klass.columns.map(&:name).include?(klass.deleted_at_column.to_s)
     end
 
-    def self.create_class(klass, type, table_suffix = '')
-      Class.new(klass) do |new_klass|
-        @deleted_at_type = type
-        @deleted_at_table_suffix = table_suffix
-
-        def self.discriminate_class_for_record(record)
-          superclass
-        end
-
-        yield(new_klass) if block_given?
-      end
-    end
-
     module ClassMethods
 
       def with_deleted_at(options={}, &block)
@@ -47,59 +48,47 @@ module DeletedAt
 
         DeletedAt::Core.raise_missing(self) unless Core.has_deleted_at_column?(self)
 
+        Core.registry[self] = arel_table
+
         @vanilla_deleted_at_projections = all.projections
+
+        class << self
+
+          def all_with_deleted_at(table = present_table, scope = only_present_records)
+            puts "CALLED: #{table.shadow} AND #{scope.to_sql}"
+            all_without_deleted_at.tap do |re|
+              re.set_deleted_at(table, scope) unless DeletedAt.table_spoofing?(false)
+            end
+          end
+
+          alias_method_chain :all, :deleted_at
+        end
 
         self.prepend(DeletedAt::ActiveRecord)
 
+        def self.present_table
+          @present_table ||= DeletedAt::Table.new(table_name, self, "/present").freeze
+        end
+
+        def self.all_table
+          @all_table ||= DeletedAt::Table.new(table_name, self, "/all").freeze
+        end
+
+        def self.deleted_table
+          @deleted_table ||= DeletedAt::Table.new(table_name, self, "/deleted").freeze
+        end
+
+        # TODO: Move to DeletedAt::ActiveRecord
         def self.const_missing(const)
           case const
           when :All
-            relation.tap do |re|
-              re.arel_table = Arel::Table.new(table_name + "/all", self)
-            end
+            all_with_deleted_at(all_table, all_records)
           when :Deleted
-            relation.tap do |re|
-              re.arel_table = Arel::Table.new(table_name + "/deleted", self)
-            end
+            all_with_deleted_at(deleted_table, only_deleted_records)
           end
         end
 
-        # TODO Move to ActiveRecord
-        def deleted_at_table_name
-          @deleted_at_table_name ||= Thread.currently(:selecting_deleted_at, false) do
-            table_name + (@deleted_at_table_suffix || '')
-          end
-        end
 
-        def table_name
-          if Thread.currently?(:selecting_deleted_at, true)
-            binding.pry
-            deleted_at_table_name
-          else
-            super
-          end
-        end
-
-        self.const_set(:All, DeletedAt::Core.create_class(self, :all, '_all') do |klass|
-          class << klass
-            alias_method :deleted_scope, :with_all
-          end
-        end)
-
-        self.const_set(:Deleted, DeletedAt::Core.create_class(self, :deleted, '_deleted') do |klass|
-          class << klass
-            alias_method :deleted_scope, :with_deleted
-          end
-        end)
-
-        class << self
-          alias_method :deleted_scope, :with_present
-        end
-
-        self.const_set(:Present, self)
-
-        @arel_table = nil
-        # default_scope { all.only_present }
       # Rescue so that we don't stop migrations from running.
       rescue ::ActiveRecord::StatementInvalid => e
       end

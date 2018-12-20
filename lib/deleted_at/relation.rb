@@ -2,30 +2,40 @@ module DeletedAt
   module Relation
 
     def self.prepended(subclass)
-      subclass.class_eval do
-        attr_writer :deleted_at_scope
-        attr_writer :deleted_at_table_name
-
-        def deleted_at_tables
-          @deleted_at_tables ||= Set.new
-        end
-
-        def deleted_at_table_name
-          @deleted_at_table_name ||= ""
-        end
-
-        private
-
-        def deleted_at_scope
-          @deleted_at_scope
-        end
-
-      end
 
     end
 
+    def initialize(*args)
+      super.tap do
+        # We duplicate this because we may modify it inflight
+        # but we don't want to infect the base class arel_table
+        # @original_table = @table
+        # @table = DeletedAt::Table.new(@table.name, @table.engine)
+      end
+    end
+
+    def set_deleted_at(table, scope)
+      @original_table = @table
+      puts "Setting table: #{table.shadow}, scope: #{scope.to_sql}"
+      # binding.pry if table.shadow == '/present'
+      @table = table
+      @deleted_at_scope = scope
+    end
+
+    def unscope_deleted_at
+      puts "Unscoping DeletedAt"
+      @table = @original_table || @table
+      @deleted_at_scope = nil
+    end
+
+    # To mimic what would be delegated to a model class.
+    def arel_table
+      @table
+    end
+
+
     def exec_queries
-      Thread.currently(:foobar, true) do
+      Thread.currently(:selecting_deleted_at, true) do
         super
       end
       # @records = eager_loading? ? find_with_associations : @klass.find_by_sql(arel, arel.bind_values + bind_values)
@@ -44,36 +54,35 @@ module DeletedAt
     end
 
     def build_arel(*args)
-      super
-      # Thread.currently(:foobar, false) do |foobar_orig, foobar_curr|
-      #   deleted_at_table_name = select_table_name
-      #   # if foobar_orig
-      #   #   def table
-      #   #     super.tap do |t|
-      #   #       t.name = select_table_name
-      #   #     end
-      #   #   end
-      #   # end
+      # Thread.currently(:selecting_deleted_at, false) do |selecting_deleted_at_orig, selecting_deleted_at_curr|
+        # if selecting_deleted_at_orig
+        #   def table
+        #     super.tap do |t|
+        #       t.name = select_table_name
+        #     end
+        #   end
+        # end
 
-      #   super.tap do |ar|
-      #     lift_withs(ar) do
-      #       ar
-      #     end
-      #   end
-      #   # ar.engine.table_name = select_table_name
-      #   # if klass.deleted_scope
-      #   #   puts "Adding #{klass.name} With:"
-      #   #   puts klass.deleted_scope.to_sql
-      #   #   ar.with(klass.deleted_scope)
-      #   # end
+        super.tap do |ar|
+          lift_withs(ar){ar}
+          # puts "Attaching WITH: #{@table.shadow}, #{deleted_at_scope}"
+          unless @deleted_at_scope.nil?
+            puts @deleted_at_scope.to_sql
+            ar.with(@deleted_at_scope)
+          end
+        end
+        # ar.engine.table_name = select_table_name
+        # if klass.deleted_scope
+        #   puts "Adding #{klass.name} With:"
+        #   puts klass.deleted_scope.to_sql
+        #   ar.with(klass.deleted_scope)
+        # end
       # end
     end
 
     def engage_deleted_at
-      # binding.pry
-      # @table = Arel::Table.new(klass.deleted_at_table_name, klass)
       Thread.currently(:selecting_deleted_at, true) do
-        yield
+        yield if block_given?
       end
     end
 
@@ -88,15 +97,6 @@ module DeletedAt
         super
       end
     end
-
-    # def from(val, name = nil)
-    #   # binding.pry
-    #   case val
-    #   when Arel::Nodes::TableAlias
-    #     val, name = val.left, name || val.right
-    #   end
-    #   super
-    # end
 
     def from!(value, subquery_name = nil) # :nodoc:
       super.tap do |ar|
@@ -136,7 +136,7 @@ module DeletedAt
     end
 
     def deleted_at_withs(with)
-      [klass.with_deleted, klass.with_present] & (with&.expr || [])
+      [klass.all_records, klass.only_deleted_records, klass.only_present_records] & (with&.expr || [])
     end
 
     def remove_withs(select, *withs)
