@@ -1,6 +1,17 @@
 require "spec_helper"
 
 describe DeletedAt do
+
+  def view_exists?(view_name)
+    ActiveRecord::Base.connection.select_value <<-SQL
+      SELECT EXISTS (
+        SELECT 1
+        FROM   information_schema.tables
+        WHERE  table_name = '#{view_name}'
+      ) as exists;
+    SQL
+  end
+
   describe '#install for simple model' do
     after(:each) do
       DeletedAt.uninstall(User)
@@ -12,17 +23,18 @@ describe DeletedAt do
 
     it 'should rename the models table' do
       DeletedAt.install(User)
+      ::DeletedAt::Views.all_table_exists?(User)
       expect(ActiveRecord::Base.connection.table_exists?('users/all')).to be_truthy
     end
 
     it 'should have a view for all non-deleted users' do
       DeletedAt.install(User)
-      expect(ActiveRecord::Base.connection.table_exists?('users')).to be_truthy
+      expect(view_exists?('users')).to be_truthy
     end
 
     it 'should have a view for all deleted users' do
       DeletedAt.install(User)
-      expect(ActiveRecord::Base.connection.table_exists?('users/deleted')).to be_truthy
+      expect(view_exists?('users/deleted')).to be_truthy
     end
 
     it 'creates the DeletedAt class extensions' do
@@ -71,12 +83,12 @@ describe DeletedAt do
 
     it 'should have a view for all non-deleted books' do
       DeletedAt.install(Book)
-      expect(ActiveRecord::Base.connection.table_exists?('documents')).to be_truthy
+      expect(view_exists?('documents')).to be_truthy
     end
 
     it 'should have a view for all deleted books' do
       DeletedAt.install(Book)
-      expect(ActiveRecord::Base.connection.table_exists?('documents/deleted')).to be_truthy
+      expect(view_exists?('documents/deleted')).to be_truthy
     end
 
     it 'creates the DeletedAt class extensions' do
@@ -125,12 +137,12 @@ describe '#install for namespaced model' do
 
     it 'should have a view for all non-deleted books' do
       DeletedAt.install(Animals::Dog)
-      expect(ActiveRecord::Base.connection.table_exists?('dogs')).to be_truthy
+      expect(view_exists?('dogs')).to be_truthy
     end
 
     it 'should have a view for all deleted books' do
       DeletedAt.install(Animals::Dog)
-      expect(ActiveRecord::Base.connection.table_exists?('dogs/deleted')).to be_truthy
+      expect(view_exists?('dogs/deleted')).to be_truthy
     end
 
     it 'creates the DeletedAt class extensions' do
