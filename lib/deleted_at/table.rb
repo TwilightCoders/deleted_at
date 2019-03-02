@@ -3,8 +3,9 @@ module DeletedAt
 
     attr_accessor :shadow
 
-    def initialize(*args, shadow)
-      super(*args).tap do
+    def initialize(table_name, engine, shadow:)
+      super(table_name).tap do |table|
+        @engine = engine
         @shadow = shadow
       end
     end

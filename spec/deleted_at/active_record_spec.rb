@@ -7,27 +7,29 @@ describe DeletedAt::ActiveRecord do
   end
 
   it 'should use the table_alias if given' do
-    inner_query = User.where(User.arel_table[:name].eq('bob')).as('bobs')
-    sql = User.select(inner_query[:name]).from(inner_query).to_sql
+    inner_query = User.where(User.arel_table[:name].eq('bob'))
+    inner_at = inner_query.as('bobs')
+    sql = User.select(inner_at[:name]).from(inner_query, 'bobs').to_sql
 
     expect(sql).to match(Regexp.new(<<~SQL.squish))
-      WITH "users" AS
+      WITH "users/present" AS
         \\(SELECT "users"\\.\\* FROM "users" WHERE "users"\\."deleted_at" IS NULL\\)
           SELECT bobs\\."name" FROM
-          \\(SELECT "users"\\.\\* FROM "users" WHERE "users"\\."name" = 'bob'\\) bobs
+          \\(SELECT "users/present"\\.\\* FROM "users/present" WHERE "users/present"\\."name" = 'bob'\\) bobs
     SQL
   end
 
   it 'ensure projection is present' do
-    inner_query = User.select(:name).where(name: 'bob').as('bobs')
-    results = User.select(inner_query[:name]).from(inner_query)
+    inner_query = User.select(:name).where(name: 'bob')
+    inner_at = inner_query.as('bobs')
+    results = User.select(inner_at[:name]).from(inner_query, 'bobs')
     sql = results.to_sql
 
     expect(sql).to match(Regexp.new(<<~SQL.squish))
-      WITH "users" AS
+      WITH "users/present" AS
         \\(SELECT "users".\\* FROM "users" WHERE "users"."deleted_at" IS NULL\\)
           SELECT bobs."name" FROM
-            \\(SELECT "users"."name" FROM "users" WHERE "users"."name" = \\$1\\) bobs
+            \\(SELECT "users/present"."name" FROM "users/present" WHERE "users/present"."name" = \\$1\\) bobs
     SQL
   end
 
@@ -37,6 +39,7 @@ describe DeletedAt::ActiveRecord do
 
   it 'does arel properly' do
     inner_query = User::All.where(name: 'bob').merge(Admin.where(name: 'john'))
+    # inner_at =
     # Admin.where(name: 'john').to_sql
     # User::All.where(name: 'bob').merge(Admin.where(name: 'john')).to_sql
 
@@ -63,8 +66,8 @@ describe DeletedAt::ActiveRecord do
         \\(SELECT "users".* FROM
           \\(WITH "users" AS
             \\(SELECT "users"."id", "users"."kind" FROM "users" WHERE "users"."deleted_at" IS NULL\\)
-              SELECT "users"."id", "users"."kind" FROM "users" WHERE "users"."kind" = 1 AND "users"."name" = 'bob') johns
-                WHERE "users"."name" = 'john') bobs_not_johns\\) bobs
+              SELECT "users"."id", "users"."kind" FROM "users" WHERE "users"."kind" = 1 AND "users"."name" = 'bob'\\) johns
+                WHERE "users"."name" = 'john'\\) bobs_not_johns\\) bobs
     SQL
 
     expect(sql).to match(sql_regex)

@@ -30,9 +30,9 @@ module DeletedAt
         true
       end
 
-      def all_without_deleted_at
-        DeletedAt.table_spoofing(false) do
-          super
+      def all_without_deleted_at(*args, scope: false)
+        DeletedAt.scoped(scope) do
+          super(*args)
           # .tap do |ar|
           #   puts "UNSCOPING"
           #   ar.unscope_deleted_at
@@ -40,41 +40,56 @@ module DeletedAt
         end
       end
 
-      def arel_table(spoof: false)
-        if DeletedAt.table_spoofing? || spoof
-          present_table
+      def reset_table_name
+        @present_table = @all_table = @deleted_table = nil
+        super
+      end
+
+      def present_table
+        @present_table ||= DeletedAt::Table.new(table_name, self, shadow: "/present").freeze
+      end
+
+      def all_table
+        @all_table ||= DeletedAt::Table.new(table_name, self, shadow: "/all").freeze
+      end
+
+      def deleted_table
+        @deleted_table ||= DeletedAt::Table.new(table_name, self, shadow: "/deleted").freeze
+      end
+
+      # def arel_table_without_deleted_at
+      #   DeletedAt::Core.registry[self] || superclass&.arel_table_without_deleted_at || superclass.arel_table
+      # end
+
+      def deleted_at_scope
+        case DeletedAt.scope
+        when :deleted, :all, :present
+          send("#{DeletedAt.scope}_records")
+        when false
+          nil
         else
-          original_arel_table
+          present_records
         end
       end
 
       def all_records
-        @all_records ||= DeletedAt.table_spoofing(false) do
+        @all_records ||= DeletedAt.scoped(false) do
           Arel::Nodes::As.new(all_table, relation.arel).freeze
         end
       end
 
-      def only_deleted_records
-        @only_deleted_records ||= DeletedAt.table_spoofing(false) do
-          # binding.pry
-          Arel::Nodes::As.new(deleted_table, relation.where(original_arel_table[:deleted_at].not_eq(nil)).arel).freeze
+      def deleted_records
+        @deleted_records ||= DeletedAt.scoped(false) do
+          Arel::Nodes::As.new(deleted_table, relation.where(arel_table_without_deleted_at[:deleted_at].not_eq(nil)).arel).freeze
         end
       end
 
-      def only_present_records
-        @only_present_records ||= DeletedAt.table_spoofing(false) do
-          Arel::Nodes::As.new(present_table, relation.where(original_arel_table[:deleted_at].eq(nil)).arel).freeze
+      def present_records
+        @present_records ||= DeletedAt.scoped(false) do
+          Arel::Nodes::As.new(present_table, relation.where(arel_table_without_deleted_at[:deleted_at].eq(nil)).arel).freeze
         end
-      end
-
-      protected
-
-      def original_arel_table
-        DeletedAt::Core.registry[self] || superclass&.original_arel_table || superclass.arel_table
       end
 
     end
-
   end
-
 end

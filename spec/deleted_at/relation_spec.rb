@@ -37,7 +37,11 @@ describe DeletedAt::Core do
           Post.create(user: user)
         end
 
-        post = user.posts.first.delete
+        binding.pry
+        posts = user.posts
+        post = user.posts.first
+        # .delete
+        binding.pry
 
         expect(user.posts.count).to eq(3)
 

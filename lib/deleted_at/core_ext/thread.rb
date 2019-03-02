@@ -2,6 +2,10 @@ class Thread
   def self.currently(key, value)
     orignal_value, current[key] = current[key], value
     yield(orignal_value, current[key]) if block_given?
+  rescue StandardError => e
+    binding.pry
+    puts e
+    raise e
   ensure
     current[key] = orignal_value
   end

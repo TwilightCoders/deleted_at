@@ -3,14 +3,19 @@ require 'deleted_at/table'
 
 module DeletedAt
 
-  def self.table_spoofing(value=true)
-    Thread.currently(:table_spoofing, value) do
+  def self.scoped(scope=:present)
+    Thread.currently(:deleted_at_scope, scope) do
       yield
     end
   end
 
-  def self.table_spoofing?(value=true)
-    Thread.current[:table_spoofing] == value
+  def self.scoped?(value=nil)
+    (value == nil && scope != value && scope != false) ||
+    (value != nil && scope == value)
+  end
+
+  def self.scope
+    Thread.current[:deleted_at_scope]
   end
 
   module Core
@@ -40,6 +45,10 @@ module DeletedAt
 
     module ClassMethods
 
+      def deleted_at?
+        !self.deleted_at.empty?
+      end
+
       def with_deleted_at(options={}, &block)
         self.deleted_at = DeletedAt::DEFAULT_OPTIONS.merge(options)
         self.deleted_at[:proc] = block if block_given?
@@ -50,41 +59,51 @@ module DeletedAt
 
         Core.registry[self] = arel_table
 
+        reflect_on_all_associations.each do |association|
+          # association.reflection.clear_association_scope_cache
+          association.clear_association_scope_cache
+        end
+
         @vanilla_deleted_at_projections = all.projections
 
         class << self
 
-          def all_with_deleted_at(table = present_table, scope = only_present_records)
-            puts "CALLED: #{table.shadow} AND #{scope.to_sql}"
-            all_without_deleted_at.tap do |re|
-              re.set_deleted_at(table, scope) unless DeletedAt.table_spoofing?(false)
-            end
+          # def association(name)
+          #   super.tap do |ass|
+          #     ass.clear_association_scope_cache
+          #   end
+          # end
+
+          def all_with_deleted_at
+            all_without_deleted_at(scope: :present)
           end
 
           alias_method_chain :all, :deleted_at
+
+          def arel_table_with_deleted_at
+            case DeletedAt.scope
+            when :deleted, :all, :present
+              send("#{DeletedAt.scope}_table")
+            when false
+              arel_table_without_deleted_at
+            else
+              present_table
+            end
+          end
+
+          alias_method_chain :arel_table, :deleted_at
+
         end
 
         self.prepend(DeletedAt::ActiveRecord)
-
-        def self.present_table
-          @present_table ||= DeletedAt::Table.new(table_name, self, "/present").freeze
-        end
-
-        def self.all_table
-          @all_table ||= DeletedAt::Table.new(table_name, self, "/all").freeze
-        end
-
-        def self.deleted_table
-          @deleted_table ||= DeletedAt::Table.new(table_name, self, "/deleted").freeze
-        end
 
         # TODO: Move to DeletedAt::ActiveRecord
         def self.const_missing(const)
           case const
           when :All
-            all_with_deleted_at(all_table, all_records)
+            all_without_deleted_at(scope: :all)
           when :Deleted
-            all_with_deleted_at(deleted_table, only_deleted_records)
+            all_without_deleted_at(scope: :deleted)
           end
         end
 
@@ -105,6 +124,7 @@ module DeletedAt
 
       def init_deleted_at_relations
         instance_variable_get(:@relation_delegate_cache).each do |base, klass|
+          puts "#{base} => #{klass}"
           klass.send(:prepend, DeletedAt::Relation)
         end
       end
