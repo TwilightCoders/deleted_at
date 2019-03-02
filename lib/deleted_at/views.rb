@@ -23,23 +23,23 @@ module DeletedAt
     end
 
     def self.all_table_exists?(model)
-      query = model.connection.execute <<-SQL
+      query = model.connection.select_value <<-SQL
         SELECT EXISTS (
           SELECT 1
           FROM   information_schema.tables
           WHERE  table_name = '#{all_table(model)}'
-        );
+        ) as exists;
       SQL
       get_truthy_value_from_psql(query)
     end
 
     def self.deleted_view_exists?(model)
-      query = model.connection.execute <<-SQL
+      query = model.connection.select_value <<-SQL
         SELECT EXISTS (
           SELECT 1
           FROM   information_schema.tables
           WHERE  table_name = '#{deleted_view(model)}'
-        );
+        ) as exists;
       SQL
       get_truthy_value_from_psql(query)
     end
@@ -72,10 +72,7 @@ module DeletedAt
     private
 
     def self.get_truthy_value_from_psql(result)
-      # Some versions of PSQL return {"?column?"=>"t"}
-      # instead of {"first"=>"t"}, so we're saying screw it,
-      # just give me the first value of whatever is returned
-      result.try(:first).try(:values).try(:first) == 't'
+      ['t', true].include?(result)
     end
 
   end
