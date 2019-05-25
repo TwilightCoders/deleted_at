@@ -7,7 +7,7 @@ describe DeletedAt::Core do
     it "raises exception when using with_deleted_at" do
       expected_stderr = "Missing `deleted_at` in `Comment` when trying to employ `deleted_at`"
       allow(Comment).to receive(:has_deleted_at_views?).and_return(true)
-      expect{ Comment.with_deleted_at }.to raise_exception(DeletedAt::MissingColumn)
+      expect{ Comment.with_deleted_at }.to raise_exception(DeletedAt::MissingColumnError)
     end
 
   end
@@ -25,9 +25,19 @@ describe DeletedAt::Core do
     User.create(name: 'john')
     User.create(name: 'sally')
 
-    User.first.destroy
+    u = User.first
+    u.destroy
 
     expect(User::Deleted.first.class).to eq(User)
+  end
+
+  it "doesn't obstruct destroy callbacks" do
+    User.create(name: 'sally')
+
+    u = User.first
+    expect_any_instance_of(User).to receive(:say_something)
+
+    u.destroy
   end
 
   it 'works with complex eager loading' do
@@ -40,21 +50,6 @@ describe DeletedAt::Core do
     end
 
     expect(User.eager_load(posts: :comments).find_by(name: 'bob')).to eq(bob)
-  end
-
-  context 'with default_scope' do
-    it 'should have the default scope in the subquery' do
-      Admin.create(name: 'bob', kind: 1)
-      Admin.create(name: 'john', kind: 1)
-      Admin.create(name: 'sally', kind: 0)
-
-      Admin.first.destroy
-
-      User.first
-
-      # SELECT "users".* FROM (SELECT "users".* FROM "users" WHERE "users"."kind" = $1 AND "users"."deleted_at" IS NULL) "users" WHERE "users"."kind" = 1
-      expect(Admin::Deleted.first.class).to eq(Admin)
-    end
   end
 
 end

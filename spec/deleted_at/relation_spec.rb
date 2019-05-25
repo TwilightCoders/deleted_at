@@ -2,6 +2,18 @@ require "spec_helper"
 
 describe DeletedAt::Core do
 
+  context 'models with dependent: :destroy' do
+    it 'should also destroy dependents' do
+      user = User.create(name: 'bob')
+
+      4.times do
+        Post.create(user: user)
+      end
+
+      expect{user.destroy}.to_not raise_exception
+    end
+  end
+
   context "models using deleted_at" do
 
     it "#destroy should set deleted_at" do
@@ -10,6 +22,30 @@ describe DeletedAt::Core do
       User.create(name: 'sally')
 
       User.first.destroy
+
+      expect(User.count).to eq(2)
+      expect(User::All.count).to eq(3)
+      expect(User::Deleted.count).to eq(1)
+    end
+
+    it "#delete! should set deleted_at" do
+      User.create(name: 'bob')
+      User.create(name: 'john')
+      User.create(name: 'sally')
+
+      User.first.delete!
+
+      expect(User.count).to eq(2)
+      expect(User::All.count).to eq(3)
+      expect(User::Deleted.count).to eq(1)
+    end
+
+    it "#destroy! should set deleted_at" do
+      User.create(name: 'bob')
+      User.create(name: 'john')
+      User.create(name: 'sally')
+
+      User.first.destroy!
 
       expect(User.count).to eq(2)
       expect(User::All.count).to eq(3)
@@ -28,21 +64,18 @@ describe DeletedAt::Core do
       expect(User::Deleted.count).to eq(1)
     end
 
-    context 'associations' do
+    it "#destroy twice should set deleted_at and not fail" do
+      User.create(name: 'bob')
+      User.create(name: 'john')
+      User.create(name: 'sally')
 
-      it 'should scope properly' do
+      u = User.first
+      u.destroy!
+      u.destroy!
 
-        user = User.create(name: 'bob')
-        (1..4).each do
-          Post.create(user: user)
-        end
-
-        post = user.posts.first.delete
-
-        expect(user.posts.count).to eq(3)
-
-      end
-
+      expect(User.count).to eq(2)
+      expect(User::All.count).to eq(3)
+      expect(User::Deleted.count).to eq(1)
     end
 
     context '#destroy_all' do
@@ -65,6 +98,7 @@ describe DeletedAt::Core do
 
         User.where(name: 'bob').destroy_all
 
+
         expect(User.count).to eq(2)
         expect(User::All.count).to eq(3)
         expect(User::Deleted.count).to eq(1)
@@ -73,28 +107,28 @@ describe DeletedAt::Core do
 
     context '#delete_all' do
       it "should set deleted_at" do
-        Animals::Dog.create(name: 'bob')
-        Animals::Dog.create(name: 'john')
-        Animals::Dog.create(name: 'sally')
+        User.create(name: 'bob')
+        User.create(name: 'john')
+        User.create(name: 'sally')
 
         # conditions should not matter
-        Animals::Dog.all.delete_all(name: 'bob')
+        User.all.delete_all(name: 'bob')
 
-        expect(Animals::Dog.count).to eq(0)
-        expect(Animals::Dog::All.count).to eq(3)
-        expect(Animals::Dog::Deleted.count).to eq(3)
+        expect(User.count).to eq(0)
+        expect(User::All.count).to eq(3)
+        expect(User::Deleted.count).to eq(3)
       end
 
       it "with conditions should set deleted_at" do
-        Animals::Dog.create(name: 'bob')
-        Animals::Dog.create(name: 'john')
-        Animals::Dog.create(name: 'sally')
+        User.create(name: 'bob')
+        User.create(name: 'john')
+        User.create(name: 'sally')
 
-        Animals::Dog.where(name: 'bob').delete_all
+        User.where(name: 'bob').delete_all
 
-        expect(Animals::Dog.count).to eq(2)
-        expect(Animals::Dog::All.count).to eq(3)
-        expect(Animals::Dog::Deleted.count).to eq(1)
+        expect(User.count).to eq(2)
+        expect(User::All.count).to eq(3)
+        expect(User::Deleted.count).to eq(1)
       end
     end
 
