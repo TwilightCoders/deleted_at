@@ -1,13 +1,22 @@
 # DeletedAt
 
+## 0.6.0 _(May 25, 2019)_
+- Major overhaul of functionality, extracted to [`ActiveRecord::Framing`](https://github.com/TwilightCoders/active_record-framing) and refined into gem
+  - Consumes `ActiveRecord::Framing`
+- Simplified gem and distilled to only domain specific functionality
+- Adds official support for ActiveSupport up to 5.2
+- Adds official support for Ruby 2.6
+- Unbound upper constraint for ActiveSupport
+- 100% test coverage
+
 ## 0.5.0 _(June 25, 2018)_
 - Removed use of invasive views in preference of sub-selects
 - Dropped support for Ruby 2.0, 2.1, 2.2
-- Dropped support for Rails 4.1
+- Dropped support for ActiveSupport 4.1
 - Default `deleted_at` options using `Proc`
 
 ## 0.4.0 _(Never Released)_
-- Specs for Rails 4.0-5.1
+- Specs for ActiveSupport 4.0-5.1
   - Uses `combustion` gem for cleaner and more comprehensive testing
 - Added badges to ReadMe
 - Using `:prepend` to leverage ancestry chain
