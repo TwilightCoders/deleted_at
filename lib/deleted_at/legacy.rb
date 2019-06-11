@@ -10,8 +10,10 @@ module DeletedAt
     def self.install(model)
       return false unless Core.has_deleted_at_column?(model)
 
-      install_present_view(model)
-      install_deleted_view(model)
+      model.unframed do
+        install_present_view(model)
+        install_deleted_view(model)
+      end
     end
 
     private

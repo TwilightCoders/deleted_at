@@ -1,4 +1,4 @@
-require 'active_record/framing'
+require 'active_record-framing'
 
 require 'deleted_at/version'
 require 'deleted_at/relation'

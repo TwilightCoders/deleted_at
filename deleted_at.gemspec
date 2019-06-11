@@ -28,7 +28,7 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = '>= 2.3'
 
   spec.add_runtime_dependency 'activerecord', rails_versions
-  spec.add_runtime_dependency 'active_record-framing', '~> 0.1.0-6'
+  spec.add_runtime_dependency 'active_record-framing', '~> 0.1.0-10'
 
   spec.add_development_dependency 'pg'
   spec.add_development_dependency 'bundler'
