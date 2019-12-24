@@ -1,9 +1,14 @@
+require 'active_record-framing'
+
 require 'deleted_at/version'
+require 'deleted_at/relation'
+require 'deleted_at/core'
+require 'deleted_at/table_definition'
 require 'deleted_at/railtie' if defined?(Rails::Railtie)
 
 module DeletedAt
 
-  MissingColumn = Class.new(StandardError)
+  MissingColumnError = Class.new(StandardError)
 
   DEFAULT_OPTIONS = {
     column: :deleted_at,

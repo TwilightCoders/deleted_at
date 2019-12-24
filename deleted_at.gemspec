@@ -24,15 +24,19 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ['lib']
 
-  rails_versions = ['>= 4.2', '< 6']
+  rails_versions = ['>= 4.2', '< 6.1']
   spec.required_ruby_version = '>= 2.3'
 
   spec.add_runtime_dependency 'activerecord', rails_versions
+  spec.add_runtime_dependency 'active_record-framing', '~> 0.1.0-10'
 
-  spec.add_development_dependency 'pg', '~> 0'
-  spec.add_development_dependency 'pry-byebug', '~> 3'
-  spec.add_development_dependency 'bundler', '~> 1.3'
-  spec.add_development_dependency 'rake', '~> 12.0'
-  spec.add_development_dependency 'combustion', '~> 0.7'
+  spec.add_development_dependency 'pg'
+  spec.add_development_dependency 'bundler'
+  spec.add_development_dependency 'rspec'
+  spec.add_development_dependency 'combustion'
+  spec.add_development_dependency 'pry-byebug'
+  spec.add_development_dependency 'rake'
+  spec.add_development_dependency 'database_cleaner'
+  spec.add_development_dependency 'simplecov'
 
 end

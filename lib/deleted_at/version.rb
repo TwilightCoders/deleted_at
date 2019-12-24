@@ -1,3 +1,3 @@
 module DeletedAt
-  VERSION = "0.5.0-2"
+  VERSION = "0.6.0-7"
 end

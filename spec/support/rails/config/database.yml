@@ -1,4 +1,6 @@
 test:
   adapter: postgresql
+  host: localhost
   encoding: unicode
   database: deleted_at-test
+  prepared_statements: false

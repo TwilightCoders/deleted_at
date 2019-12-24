@@ -10,8 +10,10 @@ module DeletedAt
     def self.install(model)
       return false unless Core.has_deleted_at_column?(model)
 
-      install_present_view(model)
-      install_deleted_view(model)
+      model.unframed do
+        install_present_view(model)
+        install_deleted_view(model)
+      end
     end
 
     private
@@ -24,7 +26,7 @@ module DeletedAt
         model.connection.execute("ALTER TABLE \"#{present_table_name}\" RENAME TO \"#{model.table_name}\"")
         model.connection.execute <<-SQL
           CREATE OR REPLACE VIEW "#{present_table_name}"
-          AS #{ model.select('*').where(model.deleted_at_column => nil).to_sql }
+          AS #{ model.select('*').where(model.deleted_at[:column] => nil).to_sql }
         SQL
       end
     end
@@ -36,7 +38,7 @@ module DeletedAt
       while_spoofing_table_name(model, all_table(model)) do
         model.connection.execute <<-SQL
           CREATE OR REPLACE VIEW "#{table_name}"
-          AS #{ model.select('*').where.not(model.deleted_at_column => nil).to_sql }
+          AS #{ model.select('*').where.not(model.deleted_at[:column] => nil).to_sql }
         SQL
       end
     end

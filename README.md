@@ -12,7 +12,9 @@ Hide your "deleted" data (unless specifically asked for) [without resorting to](
 ## Requirements
 
 - Ruby 2.3+
-- ActiveRecord 4.1+
+- ActiveRecord 4.2+
+
+_Note: Be sure to check the builds to be sure your version is in-fact supported. The requirements are left unbounded on the upper constraint for posterity, but may not be gaurenteed to work._
 
 ## Installation
 
@@ -102,10 +104,9 @@ class IndexDeletedAtColumns < ActiveRecord::Migration
 end
 ```
 
-
 ## [Upgrading](#upgrading)
 
-If you've used `deleted_at` prior to v0.5.0, you'll need to migrate your schema. The new version of `deleted_at` no longer uses views, instead constructing a subselect on the relations. This significantly reduces code polution and monkey patching, as well as reducing the runtime memory usage for rails. Your Database will look (and be) a lot cleaner with no `deleted_at` views and your ERDs will be much cleaner as well.
+If you've used `deleted_at` prior to v0.5.0, you'll need to migrate your schema. The new version of `deleted_at` no longer uses views, instead constructing a common table expression (CTE) on the relations. This significantly reduces code polution and monkey patching, as well as reducing the runtime memory usage for rails. Your Database will look (and be) a lot cleaner with no `deleted_at` views (and your ERDs will be much cleaner as well).
 
 Here is an example of a migration for upgrading
 ```ruby

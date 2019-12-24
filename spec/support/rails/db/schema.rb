@@ -11,6 +11,7 @@ ActiveRecord::Schema.define do
   create_table :documents, force: true do |t|
     t.integer :user_id
     t.string :title
+    t.integer :scope
     t.timestamps null: false, deleted_at: true
   end
 
@@ -19,17 +20,6 @@ ActiveRecord::Schema.define do
     t.integer :user_id
     t.integer :post_id
     t.timestamps null: false
-  end
-
-  create_table 'animal/dogs', force: true do |t|
-    t.string :name
-    t.timestamps null: false, deleted_at: true
-  end
-
-  create_table :cats, force: true do |t|
-    t.string :name
-    # t.string :type
-    t.timestamps null: false, deleted_at: true
   end
 
 end
