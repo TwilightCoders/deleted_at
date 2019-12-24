@@ -1,7 +1,7 @@
 module DeletedAt
   module Relation
     def delete_all(*args)
-      if args.pop
+      if args.any?
         ActiveSupport::Deprecation.warn(<<~STR)
           Passing conditions to delete_all is not supported in DeletedAt
           To achieve the same use where(conditions).delete_all.
